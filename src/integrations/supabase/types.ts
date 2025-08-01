@@ -130,27 +130,27 @@ export type Database = {
         Row: {
           id: string
           name: string
-          description: string
-          primary_caregiver_id: string
-          care_recipient_id: string
+          description: string | null
+          care_recipient_name: string
+          created_by: string
           created_at: string
           updated_at: string
         }
         Insert: {
           id?: string
           name: string
-          description?: string
-          primary_caregiver_id: string
-          care_recipient_id: string
+          description?: string | null
+          care_recipient_name: string
+          created_by: string
           created_at?: string
           updated_at?: string
         }
         Update: {
           id?: string
           name?: string
-          description?: string
-          primary_caregiver_id?: string
-          care_recipient_id?: string
+          description?: string | null
+          care_recipient_name?: string
+          created_by?: string
           created_at?: string
           updated_at?: string
         }
@@ -175,26 +175,29 @@ export type Database = {
         Row: {
           id: string
           care_team_id: string
-          profile_id: string
+          user_id: string
           role: string
+          invited_by: string | null
+          joined_at: string | null
           created_at: string
-          updated_at: string
         }
         Insert: {
           id?: string
           care_team_id: string
-          profile_id: string
+          user_id: string
           role: string
+          invited_by?: string | null
+          joined_at?: string | null
           created_at?: string
-          updated_at?: string
         }
         Update: {
           id?: string
           care_team_id?: string
-          profile_id?: string
+          user_id?: string
           role?: string
+          invited_by?: string | null
+          joined_at?: string | null
           created_at?: string
-          updated_at?: string
         }
         Relationships: [
           {
@@ -329,6 +332,8 @@ export type Database = {
           end_date: string
           instructions: string
           prescribing_doctor: string
+          pharmacy: string
+          is_active: boolean
           created_by: string
           created_at: string
           updated_at: string
@@ -343,6 +348,8 @@ export type Database = {
           end_date?: string
           instructions?: string
           prescribing_doctor?: string
+          pharmacy?: string
+          is_active?: boolean
           created_by: string
           created_at?: string
           updated_at?: string
@@ -357,6 +364,8 @@ export type Database = {
           end_date?: string
           instructions?: string
           prescribing_doctor?: string
+          pharmacy?: string
+          is_active?: boolean
           created_by?: string
           created_at?: string
           updated_at?: string

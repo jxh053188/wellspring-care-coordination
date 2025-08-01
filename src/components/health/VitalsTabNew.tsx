@@ -30,7 +30,6 @@ interface HealthVital {
 
 interface VitalsTabProps {
     careTeamId: string;
-    onVitalsChange?: () => void;
 }
 
 const vitalTypes = [
@@ -42,7 +41,7 @@ const vitalTypes = [
     { value: 'oxygen_saturation', label: 'Oxygen Saturation', units: ['%'] },
 ];
 
-export const VitalsTab = ({ careTeamId, onVitalsChange }: VitalsTabProps) => {
+export const VitalsTab = ({ careTeamId }: VitalsTabProps) => {
     const { user } = useAuth();
     const { toast } = useToast();
     const [vitals, setVitals] = useState<HealthVital[]>([]);
@@ -57,7 +56,7 @@ export const VitalsTab = ({ careTeamId, onVitalsChange }: VitalsTabProps) => {
 
     useEffect(() => {
         fetchVitals();
-    }, [careTeamId]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [careTeamId]);
 
     const fetchVitals = async () => {
         try {
@@ -132,7 +131,6 @@ export const VitalsTab = ({ careTeamId, onVitalsChange }: VitalsTabProps) => {
                 notes: '',
             });
             fetchVitals();
-            onVitalsChange?.();
         } catch (error) {
             console.error('Error adding vitals:', error);
             toast({

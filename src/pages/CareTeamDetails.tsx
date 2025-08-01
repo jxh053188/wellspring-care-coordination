@@ -24,6 +24,7 @@ import {
     MoreVertical
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { format } from 'date-fns';
 import { InviteMemberDialog } from '@/components/care-teams/InviteMemberDialog';
 import { EditTeamDialog } from '@/components/care-teams/EditTeamDialog';
 import { CareTeamCalendar } from '@/components/care-teams/CareTeamCalendar';
@@ -72,6 +73,10 @@ const CareTeamDetails = () => {
 
     const [careTeam, setCareTeam] = useState<CareTeam | null>(null);
     const [pendingInvitations, setPendingInvitations] = useState<PendingInvitation[]>([]);
+    const [medications, setMedications] = useState<{ id: string; name: string; }[]>([]);
+    const [upcomingEvents, setUpcomingEvents] = useState<{ id: string; title: string; start_date: string; }[]>([]);
+    const [medicationLogs, setMedicationLogs] = useState<any[]>([]);
+    const [recentVitals, setRecentVitals] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('overview');
     const [showInviteDialog, setShowInviteDialog] = useState(false);
@@ -196,22 +201,135 @@ const CareTeamDetails = () => {
         }
     }, [teamId]);
 
+    const fetchMedications = useCallback(async () => {
+        if (!teamId) return;
+
+        try {
+            const { data: medsData, error } = await supabase
+                .from('medications')
+                .select('id, name, is_active')
+                .eq('care_team_id', teamId)
+                .order('name');
+
+            if (error) {
+                console.error('Failed to fetch medications:', error);
+                return;
+            }
+
+            // Filter to only show active medications for the overview cards
+            const activeMeds = (medsData || []).filter(med => med.is_active);
+            setMedications(activeMeds);
+        } catch (error) {
+            console.error('Error fetching medications:', error);
+        }
+    }, [teamId]);
+
+    const fetchUpcomingEvents = useCallback(async () => {
+        if (!teamId) return;
+
+        try {
+            const now = new Date();
+            const oneWeekFromNow = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+            const { data: eventsData, error } = await supabase
+                .from('calendar_events')
+                .select('id, title, start_date')
+                .eq('care_team_id', teamId)
+                .gte('start_date', now.toISOString())
+                .lte('start_date', oneWeekFromNow.toISOString())
+                .order('start_date', { ascending: true })
+                .limit(5);
+
+            if (error) {
+                console.error('Failed to fetch upcoming events:', error);
+                return;
+            }
+
+            setUpcomingEvents(eventsData || []);
+        } catch (error) {
+            console.error('Error fetching upcoming events:', error);
+        }
+    }, [teamId]);
+
+    const fetchMedicationLogs = useCallback(async () => {
+        if (!teamId) return;
+
+        try {
+            const { data: logs, error } = await supabase
+                .from('medication_logs')
+                .select(`
+                    *,
+                    medications!inner (name, care_team_id),
+                    administered_by_profile:profiles!administered_by (first_name, last_name)
+                `)
+                .eq('medications.care_team_id', teamId)
+                .order('administered_at', { ascending: false })
+                .limit(5);
+
+            if (error) {
+                console.error('Failed to fetch medication logs:', error);
+                return;
+            }
+
+            setMedicationLogs(logs || []);
+        } catch (error) {
+            console.error('Error fetching medication logs:', error);
+        }
+    }, [teamId]);
+
+    const fetchRecentVitals = useCallback(async () => {
+        if (!teamId) return;
+
+        try {
+            const { data: vitals, error } = await supabase
+                .from('health_vitals')
+                .select(`
+                    *,
+                    profiles (first_name, last_name)
+                `)
+                .eq('care_team_id', teamId)
+                .order('recorded_at', { ascending: false })
+                .limit(5);
+
+            if (error) {
+                console.error('Failed to fetch recent vitals:', error);
+                return;
+            }
+
+            setRecentVitals(vitals || []);
+        } catch (error) {
+            console.error('Error fetching recent vitals:', error);
+        }
+    }, [teamId]);
+
     useEffect(() => {
         if (teamId && user) {
             fetchCareTeamDetails();
             fetchPendingInvitations();
+            fetchMedications();
+            fetchUpcomingEvents();
+            fetchMedicationLogs();
+            fetchRecentVitals();
         }
-    }, [teamId, user, fetchCareTeamDetails, fetchPendingInvitations]);
+    }, [teamId, user, fetchCareTeamDetails, fetchPendingInvitations, fetchMedications, fetchUpcomingEvents, fetchMedicationLogs, fetchRecentVitals]);
 
     const handleMemberInvited = () => {
         // Refresh the care team data and pending invitations
         fetchCareTeamDetails();
         fetchPendingInvitations();
+        fetchMedications();
+        fetchUpcomingEvents();
+        fetchMedicationLogs();
+        fetchRecentVitals();
     };
 
     const handleTeamUpdated = () => {
         // Refresh the care team data to show updated information
         fetchCareTeamDetails();
+        fetchMedications();
+        fetchUpcomingEvents();
+        fetchMedicationLogs();
+        fetchRecentVitals();
     };
 
     const handleRemoveMember = async (member: CareTeamMember) => {
@@ -371,8 +489,10 @@ const CareTeamDetails = () => {
                                     <Activity className="h-4 w-4 text-muted-foreground" />
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="text-2xl font-bold">0</div>
-                                    <p className="text-xs text-muted-foreground">Coming soon</p>
+                                    <div className="text-2xl font-bold">{medications.length}</div>
+                                    <p className="text-xs text-muted-foreground">
+                                        {medications.length === 1 ? 'medication' : 'medications'} active
+                                    </p>
                                 </CardContent>
                             </Card>
                             <Card>
@@ -381,8 +501,10 @@ const CareTeamDetails = () => {
                                     <CalendarIcon className="h-4 w-4 text-muted-foreground" />
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="text-2xl font-bold">0</div>
-                                    <p className="text-xs text-muted-foreground">Coming soon</p>
+                                    <div className="text-2xl font-bold">{upcomingEvents.length}</div>
+                                    <p className="text-xs text-muted-foreground">
+                                        Next 7 days
+                                    </p>
                                 </CardContent>
                             </Card>
                             <Card>
@@ -561,7 +683,7 @@ const CareTeamDetails = () => {
                                     Track medications, health vitals, and care activities
                                 </p>
                             </div>
-                            <Button onClick={() => navigate('/health')}>
+                            <Button onClick={() => navigate(`/health?teamId=${teamId}`)}>
                                 <Heart className="h-4 w-4 mr-2" />
                                 Go to Health Dashboard
                             </Button>
@@ -570,25 +692,75 @@ const CareTeamDetails = () => {
                         <div className="grid gap-6 md:grid-cols-2">
                             <Card>
                                 <CardHeader>
-                                    <CardTitle className="text-base">Medications</CardTitle>
-                                    <CardDescription>Active medications and schedules</CardDescription>
+                                    <CardTitle className="text-base">Recent Medication Logs</CardTitle>
+                                    <CardDescription>Latest medication administration records</CardDescription>
                                 </CardHeader>
                                 <CardContent>
-                                    <p className="text-sm text-muted-foreground">
-                                        No medications recorded yet. Use the Health Dashboard to add medications.
-                                    </p>
+                                    {medicationLogs.length === 0 ? (
+                                        <p className="text-sm text-muted-foreground">
+                                            No medication logs yet. Use the Health Dashboard to log medication administration.
+                                        </p>
+                                    ) : (
+                                        <div className="space-y-3">
+                                            {medicationLogs.map((log: any) => (
+                                                <div key={log.id} className="flex justify-between items-start border-b pb-2 last:border-b-0">
+                                                    <div className="flex-1">
+                                                        <p className="text-sm font-medium">{log.medications?.name}</p>
+                                                        <p className="text-xs text-muted-foreground">
+                                                            {log.dose_amount} {log.dose_unit} • {format(new Date(log.administered_at), 'MMM d, h:mm a')}
+                                                        </p>
+                                                        {log.administered_by_profile && (
+                                                            <p className="text-xs text-muted-foreground">
+                                                                by {log.administered_by_profile.first_name} {log.administered_by_profile.last_name}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                            {medicationLogs.length >= 5 && (
+                                                <p className="text-xs text-muted-foreground text-center pt-2">
+                                                    Showing recent 5 entries
+                                                </p>
+                                            )}
+                                        </div>
+                                    )}
                                 </CardContent>
                             </Card>
 
                             <Card>
                                 <CardHeader>
-                                    <CardTitle className="text-base">Health Vitals</CardTitle>
-                                    <CardDescription>Recent vital signs and measurements</CardDescription>
+                                    <CardTitle className="text-base">Recent Vitals</CardTitle>
+                                    <CardDescription>Latest vital signs and measurements</CardDescription>
                                 </CardHeader>
                                 <CardContent>
-                                    <p className="text-sm text-muted-foreground">
-                                        No vitals recorded yet. Use the Health Dashboard to track vitals.
-                                    </p>
+                                    {recentVitals.length === 0 ? (
+                                        <p className="text-sm text-muted-foreground">
+                                            No vitals recorded yet. Use the Health Dashboard to track vitals.
+                                        </p>
+                                    ) : (
+                                        <div className="space-y-3">
+                                            {recentVitals.map((vital: any) => (
+                                                <div key={vital.id} className="flex justify-between items-start border-b pb-2 last:border-b-0">
+                                                    <div className="flex-1">
+                                                        <p className="text-sm font-medium">{vital.vital_type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</p>
+                                                        <p className="text-xs text-muted-foreground">
+                                                            {vital.value} {vital.unit} • {format(new Date(vital.recorded_at), 'MMM d, h:mm a')}
+                                                        </p>
+                                                        {vital.profiles && (
+                                                            <p className="text-xs text-muted-foreground">
+                                                                by {vital.profiles.first_name} {vital.profiles.last_name}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                            {recentVitals.length >= 5 && (
+                                                <p className="text-xs text-muted-foreground text-center pt-2">
+                                                    Showing recent 5 entries
+                                                </p>
+                                            )}
+                                        </div>
+                                    )}
                                 </CardContent>
                             </Card>
                         </div>

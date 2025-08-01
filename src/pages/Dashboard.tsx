@@ -40,27 +40,27 @@ const Dashboard = () => {
     try {
       console.log('Fetching care teams for user:', user?.id);
 
-      // First get the user's profile
-      const { data: profile, error: profileError } = await supabase
+      // First, get the user's profile ID
+      const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('id')
         .eq('user_id', user!.id)
         .single();
 
-      console.log('Profile data:', profile, 'Error:', profileError);
+      console.log('Profile data:', profileData, 'Error:', profileError);
 
-      if (profileError || !profile) {
-        console.error('Profile query failed:', profileError);
+      if (profileError || !profileData) {
+        console.error('Failed to find user profile');
         setCareTeams([]);
         setLoading(false);
         return;
       }
 
-      // Now get care team memberships using the profile ID
+      // Get care team memberships using the profile ID
       const { data: memberData, error: memberError } = await supabase
         .from('care_team_members')
         .select('care_team_id, role')
-        .eq('user_id', profile.id);
+        .eq('user_id', profileData.id);
 
       console.log('Member data:', memberData, 'Error:', memberError);
 
@@ -93,7 +93,7 @@ const Dashboard = () => {
       const teams: CareTeam[] = (teamsData || []).map(team => ({
         id: team.id,
         name: team.name,
-        description: team.description,
+        description: team.description || '',
         care_recipient_name: team.care_recipient_name,
         created_at: team.created_at,
         care_team_members: memberData
@@ -101,15 +101,13 @@ const Dashboard = () => {
           .map(m => ({
             role: m.role,
             profiles: {
-              id: profile.id,
+              id: 'temp-id',
               display_name: user?.user_metadata?.first_name || 'User',
               first_name: user?.user_metadata?.first_name || '',
               last_name: user?.user_metadata?.last_name || '',
             }
           }))
-      }));
-
-      setCareTeams(teams);
+      })); setCareTeams(teams);
     } catch (error) {
       console.error('Error fetching care teams:', error);
       toast({

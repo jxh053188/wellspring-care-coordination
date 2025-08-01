@@ -34,9 +34,10 @@ interface Allergy {
 
 interface AllergiesTabProps {
     careTeamId: string;
+    onAllergiesChange?: () => void;
 }
 
-export const AllergiesTab = ({ careTeamId }: AllergiesTabProps) => {
+export const AllergiesTab = ({ careTeamId, onAllergiesChange }: AllergiesTabProps) => {
     const { user } = useAuth();
     const { toast } = useToast();
     const [showAddDialog, setShowAddDialog] = useState(false);
@@ -53,7 +54,7 @@ export const AllergiesTab = ({ careTeamId }: AllergiesTabProps) => {
 
     useEffect(() => {
         fetchAllergies();
-    }, [careTeamId]);
+    }, [careTeamId]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const fetchAllergies = async () => {
         try {
@@ -79,12 +80,23 @@ export const AllergiesTab = ({ careTeamId }: AllergiesTabProps) => {
 
     const handleAddAllergy = async () => {
         try {
+            // Get the current user's profile ID
+            const { data: currentProfile, error: profileError } = await supabase
+                .from('profiles')
+                .select('id')
+                .eq('user_id', user!.id)
+                .single();
+
+            if (profileError || !currentProfile) {
+                throw new Error('Could not find your profile');
+            }
+
             const { error } = await supabase
                 .from('allergies')
                 .insert({
                     ...formData,
                     care_team_id: careTeamId,
-                    created_by: user!.id,
+                    created_by: currentProfile.id,
                 });
 
             if (error) throw error;
@@ -97,6 +109,7 @@ export const AllergiesTab = ({ careTeamId }: AllergiesTabProps) => {
             setShowAddDialog(false);
             resetForm();
             fetchAllergies();
+            onAllergiesChange?.();
         } catch (error) {
             console.error('Error adding allergy:', error);
             toast({
@@ -132,6 +145,7 @@ export const AllergiesTab = ({ careTeamId }: AllergiesTabProps) => {
             setEditingAllergy(null);
             resetForm();
             fetchAllergies();
+            onAllergiesChange?.();
         } catch (error) {
             console.error('Error updating allergy:', error);
             toast({
@@ -157,6 +171,7 @@ export const AllergiesTab = ({ careTeamId }: AllergiesTabProps) => {
             });
 
             fetchAllergies();
+            onAllergiesChange?.();
         } catch (error) {
             console.error('Error deleting allergy:', error);
             toast({

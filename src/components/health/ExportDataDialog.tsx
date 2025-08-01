@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Download, FileText, Calendar } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { format, subDays, subWeeks, subMonths } from 'date-fns';
+import { format as formatDate, subDays, subWeeks, subMonths } from 'date-fns';
 
 interface ExportDataDialogProps {
     careTeamId: string;
@@ -77,13 +77,13 @@ export const ExportDataDialog = ({ careTeamId, careRecipientName }: ExportDataDi
                     .from('medication_logs')
                     .select(`
             *,
-            medications (name),
-            profiles (display_name, first_name, last_name)
+            medications!inner (name, care_team_id),
+            administered_by_profile:profiles!administered_by (display_name, first_name, last_name)
           `)
-                    .eq('care_team_id', careTeamId);
+                    .eq('medications.care_team_id', careTeamId);
 
                 if (startDate) {
-                    query.gte('given_at', startDate.toISOString());
+                    query.gte('administered_at', startDate.toISOString());
                 }
 
                 const { data: logs, error: logsError } = await query;
@@ -169,9 +169,9 @@ export const ExportDataDialog = ({ careTeamId, careRecipientName }: ExportDataDi
             csvContent += 'Medication Log\n';
             csvContent += 'Date,Time,Medication,Dosage,Given By,Notes\n';
             data.medicationLogs.forEach((log: any) => {
-                const dateTime = new Date(log.given_at);
-                const givenBy = log.profiles?.display_name || `${log.profiles?.first_name} ${log.profiles?.last_name}`.trim();
-                csvContent += `"${format(dateTime, 'MM/dd/yyyy')}","${format(dateTime, 'h:mm a')}","${log.medications?.name || ''}","${log.dosage_given || ''}","${givenBy}","${log.notes || ''}"\n`;
+                const dateTime = new Date(log.administered_at);
+                const givenBy = log.administered_by_profile?.display_name || `${log.administered_by_profile?.first_name} ${log.administered_by_profile?.last_name}`.trim();
+                csvContent += `"${formatDate(dateTime, 'MM/dd/yyyy')}","${formatDate(dateTime, 'h:mm a')}","${log.medications?.name || ''}","${log.dose_amount || ''}","${givenBy}","${log.notes || ''}"\n`;
             });
             csvContent += '\n';
         }
@@ -189,7 +189,7 @@ export const ExportDataDialog = ({ careTeamId, careRecipientName }: ExportDataDi
                 const weight = vital.weight ? `${vital.weight} ${vital.weight_unit}` : '';
                 const temp = vital.temperature ? `${vital.temperature}°${vital.temperature_unit}` : '';
 
-                csvContent += `"${format(dateTime, 'MM/dd/yyyy')}","${format(dateTime, 'h:mm a')}","${weight}","${bp}","${vital.heart_rate || ''}","${temp}","${vital.blood_sugar || ''}","${vital.oxygen_saturation || ''}","${recordedBy}","${vital.notes || ''}"\n`;
+                csvContent += `"${formatDate(dateTime, 'MM/dd/yyyy')}","${formatDate(dateTime, 'h:mm a')}","${weight}","${bp}","${vital.heart_rate || ''}","${temp}","${vital.blood_sugar || ''}","${vital.oxygen_saturation || ''}","${recordedBy}","${vital.notes || ''}"\n`;
             });
             csvContent += '\n';
         }
@@ -208,7 +208,7 @@ export const ExportDataDialog = ({ careTeamId, careRecipientName }: ExportDataDi
         const link = document.createElement('a');
         const url = URL.createObjectURL(blob);
         link.setAttribute('href', url);
-        link.setAttribute('download', `${recipientName}_health_data_${format(new Date(), 'yyyy-MM-dd')}.csv`);
+        link.setAttribute('download', `${recipientName}_health_data_${formatDate(new Date(), 'yyyy-MM-dd')}.csv`);
         link.style.visibility = 'hidden';
         document.body.appendChild(link);
         link.click();
@@ -236,7 +236,7 @@ export const ExportDataDialog = ({ careTeamId, careRecipientName }: ExportDataDi
         </head>
         <body>
           <h1>Health Report for ${recipientName}</h1>
-          <p>Generated on: ${format(new Date(), 'MMMM d, yyyy')}</p>
+          <p>Generated on: ${formatDate(new Date(), 'MMMM d, yyyy')}</p>
     `;
 
         // Add medications
