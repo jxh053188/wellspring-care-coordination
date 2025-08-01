@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Users, Plus, Heart, Shield, Activity } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { CreateCareTeamDialog } from '@/components/care-teams/CreateCareTeamDialog';
 
 interface Profile {
   id: string;
@@ -29,8 +30,10 @@ interface CareTeam {
 
 const Dashboard = () => {
   const { user, signOut } = useAuth();
+  const navigate = useNavigate();
   const [careTeams, setCareTeams] = useState<CareTeam[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
   const { toast } = useToast();
 
   const fetchCareTeams = useCallback(async () => {
@@ -119,75 +122,17 @@ const Dashboard = () => {
     }
   }, [user, toast]);
 
-  const createCareTeam = useCallback(async () => {
-    try {
-      console.log('Creating care team for user:', user?.id);
+  const handleCreateCareTeam = () => {
+    setShowCreateDialog(true);
+  };
 
-      // First get the user's profile ID
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('user_id', user!.id)
-        .single();
+  const handleCareTeamCreated = () => {
+    fetchCareTeams();
+  };
 
-      console.log('Profile data for care team creation:', profile, 'Error:', profileError);
-
-      if (profileError || !profile) {
-        console.error('Profile query failed:', profileError);
-        throw new Error('Could not find user profile');
-      }
-
-      // Create a care team using the profile ID
-      const { data: careTeam, error: teamError } = await supabase
-        .from('care_teams')
-        .insert({
-          name: 'My Family Care Team',
-          description: 'Primary care coordination for our family',
-          care_recipient_name: 'Mom',
-          created_by: profile.id, // Use profile ID instead of auth user ID
-        })
-        .select()
-        .single();
-
-      console.log('Care team creation result:', { careTeam, teamError });
-
-      if (teamError) {
-        console.error('Team creation error details:', teamError);
-        throw teamError;
-      }
-
-      // Then add the user as an admin member using their profile ID
-      const { error: memberError } = await supabase
-        .from('care_team_members')
-        .insert({
-          care_team_id: careTeam.id,
-          user_id: profile.id, // Use profile ID instead of auth user ID
-          role: 'admin',
-        });
-
-      console.log('Team membership creation result:', { memberError });
-
-      if (memberError) {
-        console.error('Member creation error details:', memberError);
-        throw memberError;
-      }
-
-      toast({
-        title: "Success",
-        description: "Care team created successfully!",
-      });
-
-      // Refresh the care teams
-      fetchCareTeams();
-    } catch (error) {
-      console.error('Error creating care team:', error);
-      toast({
-        title: "Error",
-        description: `Failed to create care team: ${error.message || 'Unknown error'}`,
-        variant: "destructive",
-      });
-    }
-  }, [user, fetchCareTeams, toast]);
+  const handleCareTeamClick = (teamId: string) => {
+    navigate(`/care-team/${teamId}`);
+  };
 
   useEffect(() => {
     if (user) {
@@ -249,7 +194,7 @@ const Dashboard = () => {
             <p className="text-muted-foreground mb-8 max-w-md mx-auto">
               Start by creating your first care team to coordinate care for your loved one with family, friends, and professionals.
             </p>
-            <Button size="lg" className="gap-2" onClick={createCareTeam}>
+            <Button size="lg" className="gap-2" onClick={handleCreateCareTeam}>
               <Plus className="h-5 w-5" />
               Create Your First Care Team
             </Button>
@@ -273,7 +218,7 @@ const Dashboard = () => {
                   Coordinate care and stay connected with your loved ones
                 </p>
               </div>
-              <Button className="gap-2" onClick={createCareTeam}>
+              <Button className="gap-2" onClick={handleCreateCareTeam}>
                 <Plus className="h-5 w-5" />
                 New Care Team
               </Button>
@@ -281,7 +226,11 @@ const Dashboard = () => {
 
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
               {careTeams.map((team) => (
-                <Card key={team.id} className="hover:shadow-lg transition-shadow cursor-pointer">
+                <Card
+                  key={team.id}
+                  className="hover:shadow-lg transition-shadow cursor-pointer"
+                  onClick={() => handleCareTeamClick(team.id)}
+                >
                   <CardHeader>
                     <div className="flex items-start justify-between">
                       <div>
@@ -328,6 +277,13 @@ const Dashboard = () => {
           </div>
         )}
       </main>
+
+      {/* Create Care Team Dialog */}
+      <CreateCareTeamDialog
+        open={showCreateDialog}
+        onOpenChange={setShowCreateDialog}
+        onCareTeamCreated={handleCareTeamCreated}
+      />
     </div>
   );
 };

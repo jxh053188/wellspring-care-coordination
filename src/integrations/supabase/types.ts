@@ -7,45 +7,40 @@ export type Json =
   | Json[]
 
 export type Database = {
-  // Allows to automatically instanciate createClient with right options
-  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
-  __InternalSupabase: {
-    PostgrestVersion: "13.0.4"
-  }
   public: {
     Tables: {
       allergies: {
         Row: {
-          allergen: string
-          care_team_id: string
-          created_at: string
-          created_by: string
           id: string
-          notes: string | null
-          reaction: string | null
-          severity: string | null
+          care_team_id: string
+          allergen: string
+          severity: string
+          reaction: string
+          notes: string
+          created_by: string
+          created_at: string
           updated_at: string
         }
         Insert: {
-          allergen: string
-          care_team_id: string
-          created_at?: string
-          created_by: string
           id?: string
-          notes?: string | null
-          reaction?: string | null
-          severity?: string | null
+          care_team_id: string
+          allergen: string
+          severity: string
+          reaction?: string
+          notes?: string
+          created_by: string
+          created_at?: string
           updated_at?: string
         }
         Update: {
-          allergen?: string
-          care_team_id?: string
-          created_at?: string
-          created_by?: string
           id?: string
-          notes?: string | null
-          reaction?: string | null
-          severity?: string | null
+          care_team_id?: string
+          allergen?: string
+          severity?: string
+          reaction?: string
+          notes?: string
+          created_by?: string
+          created_at?: string
           updated_at?: string
         }
         Relationships: [
@@ -56,35 +51,80 @@ export type Database = {
             referencedRelation: "care_teams"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "allergies_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      care_teams: {
+        Row: {
+          id: string
+          name: string
+          description: string
+          care_recipient_name: string
+          created_by: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          name: string
+          description?: string
+          care_recipient_name: string
+          created_by: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          name?: string
+          description?: string
+          care_recipient_name?: string
+          created_by?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "care_teams_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
         ]
       }
       care_team_members: {
         Row: {
-          care_team_id: string
-          created_at: string
           id: string
+          care_team_id: string
+          user_id: string
+          role: "admin" | "family" | "friend" | "professional" | "caregiver"
           invited_by: string | null
           joined_at: string | null
-          role: Database["public"]["Enums"]["care_team_role"]
-          user_id: string
+          created_at: string
         }
         Insert: {
-          care_team_id: string
-          created_at?: string
           id?: string
+          care_team_id: string
+          user_id: string
+          role?: "admin" | "family" | "friend" | "professional" | "caregiver"
           invited_by?: string | null
           joined_at?: string | null
-          role?: Database["public"]["Enums"]["care_team_role"]
-          user_id: string
+          created_at?: string
         }
         Update: {
-          care_team_id?: string
-          created_at?: string
           id?: string
+          care_team_id?: string
+          user_id?: string
+          role?: "admin" | "family" | "friend" | "professional" | "caregiver"
           invited_by?: string | null
           joined_at?: string | null
-          role?: Database["public"]["Enums"]["care_team_role"]
-          user_id?: string
+          created_at?: string
         }
         Relationships: [
           {
@@ -94,89 +134,58 @@ export type Database = {
             referencedRelation: "care_teams"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "care_team_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "care_team_members_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
         ]
-      }
-      care_teams: {
-        Row: {
-          care_recipient_name: string
-          created_at: string
-          created_by: string
-          description: string | null
-          id: string
-          name: string
-          updated_at: string
-        }
-        Insert: {
-          care_recipient_name: string
-          created_at?: string
-          created_by: string
-          description?: string | null
-          id?: string
-          name: string
-          updated_at?: string
-        }
-        Update: {
-          care_recipient_name?: string
-          created_at?: string
-          created_by?: string
-          description?: string | null
-          id?: string
-          name?: string
-          updated_at?: string
-        }
-        Relationships: []
       }
       health_vitals: {
         Row: {
-          blood_pressure_diastolic: number | null
-          blood_pressure_systolic: number | null
-          blood_sugar: number | null
-          care_team_id: string
-          created_at: string
-          heart_rate: number | null
           id: string
-          notes: string | null
-          oxygen_saturation: number | null
-          recorded_at: string
+          care_team_id: string
+          vital_type: string
+          value: number
+          unit: string
           recorded_by: string
-          temperature: number | null
-          temperature_unit: string | null
-          weight: number | null
-          weight_unit: string | null
+          recorded_at: string
+          notes: string
+          created_at: string
+          updated_at: string
         }
         Insert: {
-          blood_pressure_diastolic?: number | null
-          blood_pressure_systolic?: number | null
-          blood_sugar?: number | null
-          care_team_id: string
-          created_at?: string
-          heart_rate?: number | null
           id?: string
-          notes?: string | null
-          oxygen_saturation?: number | null
-          recorded_at: string
+          care_team_id: string
+          vital_type: string
+          value: number
+          unit: string
           recorded_by: string
-          temperature?: number | null
-          temperature_unit?: string | null
-          weight?: number | null
-          weight_unit?: string | null
+          recorded_at?: string
+          notes?: string
+          created_at?: string
+          updated_at?: string
         }
         Update: {
-          blood_pressure_diastolic?: number | null
-          blood_pressure_systolic?: number | null
-          blood_sugar?: number | null
-          care_team_id?: string
-          created_at?: string
-          heart_rate?: number | null
           id?: string
-          notes?: string | null
-          oxygen_saturation?: number | null
-          recorded_at?: string
+          care_team_id?: string
+          vital_type?: string
+          value?: number
+          unit?: string
           recorded_by?: string
-          temperature?: number | null
-          temperature_unit?: string | null
-          weight?: number | null
-          weight_unit?: string | null
+          recorded_at?: string
+          notes?: string
+          created_at?: string
+          updated_at?: string
         }
         Relationships: [
           {
@@ -186,38 +195,39 @@ export type Database = {
             referencedRelation: "care_teams"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "health_vitals_recorded_by_fkey"
+            columns: ["recorded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
         ]
       }
       medication_logs: {
         Row: {
-          care_team_id: string
-          created_at: string
-          dosage_given: string | null
-          given_at: string
-          given_by: string
           id: string
           medication_id: string
-          notes: string | null
+          taken_at: string
+          taken_by: string
+          notes: string
+          created_at: string
         }
         Insert: {
-          care_team_id: string
-          created_at?: string
-          dosage_given?: string | null
-          given_at: string
-          given_by: string
           id?: string
           medication_id: string
-          notes?: string | null
+          taken_at?: string
+          taken_by: string
+          notes?: string
+          created_at?: string
         }
         Update: {
-          care_team_id?: string
-          created_at?: string
-          dosage_given?: string | null
-          given_at?: string
-          given_by?: string
           id?: string
           medication_id?: string
-          notes?: string | null
+          taken_at?: string
+          taken_by?: string
+          notes?: string
+          created_at?: string
         }
         Relationships: [
           {
@@ -227,55 +237,59 @@ export type Database = {
             referencedRelation: "medications"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "medication_logs_taken_by_fkey"
+            columns: ["taken_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
         ]
       }
       medications: {
         Row: {
-          care_team_id: string
-          created_at: string
-          created_by: string
-          dosage: string | null
-          end_date: string | null
-          frequency: string | null
           id: string
-          instructions: string | null
-          is_active: boolean
+          care_team_id: string
           name: string
-          pharmacy: string | null
-          prescribing_doctor: string | null
-          start_date: string | null
+          dosage: string
+          frequency: string
+          prescribed_by: string
+          start_date: string
+          end_date: string | null
+          notes: string
+          is_active: boolean
+          created_by: string
+          created_at: string
           updated_at: string
         }
         Insert: {
-          care_team_id: string
-          created_at?: string
-          created_by: string
-          dosage?: string | null
-          end_date?: string | null
-          frequency?: string | null
           id?: string
-          instructions?: string | null
-          is_active?: boolean
+          care_team_id: string
           name: string
-          pharmacy?: string | null
-          prescribing_doctor?: string | null
-          start_date?: string | null
+          dosage: string
+          frequency: string
+          prescribed_by?: string
+          start_date?: string
+          end_date?: string | null
+          notes?: string
+          is_active?: boolean
+          created_by: string
+          created_at?: string
           updated_at?: string
         }
         Update: {
-          care_team_id?: string
-          created_at?: string
-          created_by?: string
-          dosage?: string | null
-          end_date?: string | null
-          frequency?: string | null
           id?: string
-          instructions?: string | null
-          is_active?: boolean
+          care_team_id?: string
           name?: string
-          pharmacy?: string | null
-          prescribing_doctor?: string | null
-          start_date?: string | null
+          dosage?: string
+          frequency?: string
+          prescribed_by?: string
+          start_date?: string
+          end_date?: string | null
+          notes?: string
+          is_active?: boolean
+          created_by?: string
+          created_at?: string
           updated_at?: string
         }
         Relationships: [
@@ -286,41 +300,105 @@ export type Database = {
             referencedRelation: "care_teams"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "medications_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      pending_invitations: {
+        Row: {
+          id: string
+          care_team_id: string
+          email: string
+          role: "admin" | "family" | "friend" | "professional" | "caregiver"
+          invited_by: string
+          first_name: string | null
+          last_name: string | null
+          personal_message: string | null
+          invited_at: string
+          expires_at: string
+          status: string
+        }
+        Insert: {
+          id?: string
+          care_team_id: string
+          email: string
+          role?: "admin" | "family" | "friend" | "professional" | "caregiver"
+          invited_by: string
+          first_name?: string | null
+          last_name?: string | null
+          personal_message?: string | null
+          invited_at?: string
+          expires_at?: string
+          status?: string
+        }
+        Update: {
+          id?: string
+          care_team_id?: string
+          email?: string
+          role?: "admin" | "family" | "friend" | "professional" | "caregiver"
+          invited_by?: string
+          first_name?: string | null
+          last_name?: string | null
+          personal_message?: string | null
+          invited_at?: string
+          expires_at?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pending_invitations_care_team_id_fkey"
+            columns: ["care_team_id"]
+            isOneToOne: false
+            referencedRelation: "care_teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pending_invitations_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          }
         ]
       }
       profiles: {
         Row: {
-          avatar_url: string | null
-          created_at: string
+          id: string
+          user_id: string
           display_name: string | null
           first_name: string | null
-          id: string
           last_name: string | null
           phone: string | null
+          avatar_url: string | null
+          created_at: string
           updated_at: string
-          user_id: string
         }
         Insert: {
-          avatar_url?: string | null
-          created_at?: string
+          id?: string
+          user_id: string
           display_name?: string | null
           first_name?: string | null
-          id?: string
           last_name?: string | null
           phone?: string | null
+          avatar_url?: string | null
+          created_at?: string
           updated_at?: string
-          user_id: string
         }
         Update: {
-          avatar_url?: string | null
-          created_at?: string
+          id?: string
+          user_id?: string
           display_name?: string | null
           first_name?: string | null
-          id?: string
           last_name?: string | null
           phone?: string | null
+          avatar_url?: string | null
+          created_at?: string
           updated_at?: string
-          user_id?: string
         }
         Relationships: []
       }
@@ -332,146 +410,10 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      care_team_role:
-      | "admin"
-      | "family"
-      | "friend"
-      | "professional"
-      | "caregiver"
+      care_team_role: "admin" | "family" | "friend" | "professional" | "caregiver"
     }
     CompositeTypes: {
       [_ in never]: never
     }
   }
 }
-
-type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
-
-type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
-
-export type Tables<
-  DefaultSchemaTableNameOrOptions extends
-  | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-  | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-  ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-    DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-  : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-    DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
-      Row: infer R
-    }
-  ? R
-  : never
-  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-    DefaultSchema["Views"])
-  ? (DefaultSchema["Tables"] &
-    DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
-      Row: infer R
-    }
-  ? R
-  : never
-  : never
-
-export type TablesInsert<
-  DefaultSchemaTableNameOrOptions extends
-  | keyof DefaultSchema["Tables"]
-  | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-  ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-  : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-    Insert: infer I
-  }
-  ? I
-  : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-  ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-    Insert: infer I
-  }
-  ? I
-  : never
-  : never
-
-export type TablesUpdate<
-  DefaultSchemaTableNameOrOptions extends
-  | keyof DefaultSchema["Tables"]
-  | { schema: keyof DatabaseWithoutInternals },
-  TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-  ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-  : never = never,
-> = DefaultSchemaTableNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-    Update: infer U
-  }
-  ? U
-  : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-  ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-    Update: infer U
-  }
-  ? U
-  : never
-  : never
-
-export type Enums<
-  DefaultSchemaEnumNameOrOptions extends
-  | keyof DefaultSchema["Enums"]
-  | { schema: keyof DatabaseWithoutInternals },
-  EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-  ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-  : never = never,
-> = DefaultSchemaEnumNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
-  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
-  ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
-  : never
-
-export type CompositeTypes<
-  PublicCompositeTypeNameOrOptions extends
-  | keyof DefaultSchema["CompositeTypes"]
-  | { schema: keyof DatabaseWithoutInternals },
-  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof DatabaseWithoutInternals
-  }
-  ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-  : never = never,
-> = PublicCompositeTypeNameOrOptions extends {
-  schema: keyof DatabaseWithoutInternals
-}
-  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
-  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-  ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
-  : never
-
-export const Constants = {
-  public: {
-    Enums: {
-      care_team_role: [
-        "admin",
-        "family",
-        "friend",
-        "professional",
-        "caregiver",
-      ],
-    },
-  },
-} as const
