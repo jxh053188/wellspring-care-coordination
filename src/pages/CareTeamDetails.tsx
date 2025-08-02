@@ -28,6 +28,7 @@ import { format } from 'date-fns';
 import { InviteMemberDialog } from '@/components/care-teams/InviteMemberDialog';
 import { EditTeamDialog } from '@/components/care-teams/EditTeamDialog';
 import { CareTeamCalendar } from '@/components/care-teams/CareTeamCalendar';
+import { Messages } from '@/components/care-teams/Messages';
 
 interface Profile {
     id: string;
@@ -77,6 +78,7 @@ const CareTeamDetails = () => {
     const [upcomingEvents, setUpcomingEvents] = useState<{ id: string; title: string; start_date: string; }[]>([]);
     const [medicationLogs, setMedicationLogs] = useState<any[]>([]);
     const [recentVitals, setRecentVitals] = useState<any[]>([]);
+    const [recentMessages, setRecentMessages] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [activeTab, setActiveTab] = useState('overview');
     const [showInviteDialog, setShowInviteDialog] = useState(false);
@@ -302,6 +304,31 @@ const CareTeamDetails = () => {
         }
     }, [teamId]);
 
+    const fetchRecentMessages = useCallback(async () => {
+        if (!teamId) return;
+
+        try {
+            const { data: messages, error } = await supabase
+                .from('messages')
+                .select(`
+                    *,
+                    author:profiles!author_id (first_name, last_name)
+                `)
+                .eq('care_team_id', teamId)
+                .order('created_at', { ascending: false })
+                .limit(5);
+
+            if (error) {
+                console.error('Failed to fetch recent messages:', error);
+                return;
+            }
+
+            setRecentMessages(messages || []);
+        } catch (error) {
+            console.error('Error fetching recent messages:', error);
+        }
+    }, [teamId]);
+
     useEffect(() => {
         if (teamId && user) {
             fetchCareTeamDetails();
@@ -310,8 +337,9 @@ const CareTeamDetails = () => {
             fetchUpcomingEvents();
             fetchMedicationLogs();
             fetchRecentVitals();
+            fetchRecentMessages();
         }
-    }, [teamId, user, fetchCareTeamDetails, fetchPendingInvitations, fetchMedications, fetchUpcomingEvents, fetchMedicationLogs, fetchRecentVitals]);
+    }, [teamId, user, fetchCareTeamDetails, fetchPendingInvitations, fetchMedications, fetchUpcomingEvents, fetchMedicationLogs, fetchRecentVitals, fetchRecentMessages]);
 
     const handleMemberInvited = () => {
         // Refresh the care team data and pending invitations
@@ -321,6 +349,7 @@ const CareTeamDetails = () => {
         fetchUpcomingEvents();
         fetchMedicationLogs();
         fetchRecentVitals();
+        fetchRecentMessages();
     };
 
     const handleTeamUpdated = () => {
@@ -330,6 +359,7 @@ const CareTeamDetails = () => {
         fetchUpcomingEvents();
         fetchMedicationLogs();
         fetchRecentVitals();
+        fetchRecentMessages();
     };
 
     const handleRemoveMember = async (member: CareTeamMember) => {
@@ -513,8 +543,10 @@ const CareTeamDetails = () => {
                                     <MessageSquare className="h-4 w-4 text-muted-foreground" />
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="text-2xl font-bold">0</div>
-                                    <p className="text-xs text-muted-foreground">Coming soon</p>
+                                    <div className="text-2xl font-bold">{recentMessages.length}</div>
+                                    <p className="text-xs text-muted-foreground">
+                                        {recentMessages.length === 0 ? 'No messages yet' : 'Recent activity'}
+                                    </p>
                                 </CardContent>
                             </Card>
                         </div>
@@ -774,13 +806,10 @@ const CareTeamDetails = () => {
                     </TabsContent>
 
                     <TabsContent value="messages" className="space-y-6">
-                        <div className="text-center py-12">
-                            <MessageSquare className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                            <h3 className="text-lg font-semibold mb-2">Secure Messaging Coming Soon</h3>
-                            <p className="text-muted-foreground">
-                                Communicate securely with your care team members.
-                            </p>
-                        </div>
+                        <Messages
+                            careTeamId={careTeam.id}
+                            careTeamName={careTeam.name}
+                        />
                     </TabsContent>
                 </Tabs>
             </main>

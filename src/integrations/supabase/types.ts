@@ -471,6 +471,157 @@ export type Database = {
         }
         Relationships: []
       }
+      messages: {
+        Row: {
+          id: string
+          care_team_id: string
+          author_id: string
+          content: string
+          message_type: string
+          parent_id: string | null
+          created_at: string
+          updated_at: string
+          is_pinned: boolean
+          is_urgent: boolean
+        }
+        Insert: {
+          id?: string
+          care_team_id: string
+          author_id: string
+          content: string
+          message_type?: string
+          parent_id?: string | null
+          created_at?: string
+          updated_at?: string
+          is_pinned?: boolean
+          is_urgent?: boolean
+        }
+        Update: {
+          id?: string
+          care_team_id?: string
+          author_id?: string
+          content?: string
+          message_type?: string
+          parent_id?: string | null
+          created_at?: string
+          updated_at?: string
+          is_pinned?: boolean
+          is_urgent?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_care_team_id_fkey"
+            columns: ["care_team_id"]
+            isOneToOne: false
+            referencedRelation: "care_teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      message_attachments: {
+        Row: {
+          id: string
+          message_id: string
+          file_name: string
+          file_size: number
+          file_type: string
+          mime_type: string
+          storage_path: string
+          uploaded_by: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          message_id: string
+          file_name: string
+          file_size: number
+          file_type: string
+          mime_type: string
+          storage_path: string
+          uploaded_by: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          message_id?: string
+          file_name?: string
+          file_size?: number
+          file_type?: string
+          mime_type?: string
+          storage_path?: string
+          uploaded_by?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_attachments_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_attachments_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      message_reactions: {
+        Row: {
+          id: string
+          message_id: string
+          user_id: string
+          reaction_type: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          message_id: string
+          user_id: string
+          reaction_type?: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          message_id?: string
+          user_id?: string
+          reaction_type?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_reactions_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_reactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

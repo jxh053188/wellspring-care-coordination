@@ -13,8 +13,8 @@ DROP POLICY IF EXISTS "Users can create care teams" ON public.care_teams;
 DROP POLICY IF EXISTS "Admins can update their care teams" ON public.care_teams;
 
 -- Drop the helper functions that might cause recursion
-DROP FUNCTION IF EXISTS public.is_team_member(UUID, UUID);
-DROP FUNCTION IF EXISTS public.is_team_admin(UUID, UUID);
+DROP FUNCTION IF EXISTS public.is_team_member(UUID, UUID) CASCADE;
+DROP FUNCTION IF EXISTS public.is_team_admin(UUID, UUID) CASCADE;
 
 -- Create simple, non-recursive policies for care_teams
 CREATE POLICY "Anyone can create care teams" 
