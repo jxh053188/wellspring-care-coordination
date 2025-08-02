@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Download, FileText, Calendar } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { format as formatDate, subDays, subWeeks, subMonths } from 'date-fns';
+import { format as formatDate, subDays, subWeeks, subMonths, startOfDay, endOfDay } from 'date-fns';
 
 interface ExportDataDialogProps {
     careTeamId: string;
@@ -33,9 +33,18 @@ export const ExportDataDialog = ({ careTeamId, careRecipientName }: ExportDataDi
             const data: any = {};
             const now = new Date();
             let startDate: Date | null = null;
+            let endDate: Date | null = null;
 
             // Calculate date range
             switch (dateRange) {
+                case 'today':
+                    startDate = startOfDay(now);
+                    endDate = endOfDay(now);
+                    break;
+                case 'yesterday':
+                    startDate = startOfDay(subDays(now, 1));
+                    endDate = endOfDay(subDays(now, 1));
+                    break;
                 case 'week':
                     startDate = subWeeks(now, 1);
                     break;
@@ -53,6 +62,7 @@ export const ExportDataDialog = ({ careTeamId, careRecipientName }: ExportDataDi
                     break;
                 default:
                     startDate = null; // All time
+                    endDate = null;
             }
 
             // Fetch medications
@@ -76,14 +86,18 @@ export const ExportDataDialog = ({ careTeamId, careRecipientName }: ExportDataDi
                 const query = supabase
                     .from('medication_logs')
                     .select(`
-            *,
-            medications!inner (name, care_team_id),
-            administered_by_profile:profiles!administered_by (display_name, first_name, last_name)
-          `)
-                    .eq('medications.care_team_id', careTeamId);
+                        *,
+                        medications!inner (name, care_team_id),
+                        administered_by_profile:profiles!administered_by (display_name, first_name, last_name)
+                    `)
+                    .eq('medications.care_team_id', careTeamId)
+                    .order('administered_at', { ascending: false });
 
                 if (startDate) {
                     query.gte('administered_at', startDate.toISOString());
+                }
+                if (endDate) {
+                    query.lte('administered_at', endDate.toISOString());
                 }
 
                 const { data: logs, error: logsError } = await query;
@@ -96,13 +110,17 @@ export const ExportDataDialog = ({ careTeamId, careRecipientName }: ExportDataDi
                 const query = supabase
                     .from('health_vitals')
                     .select(`
-            *,
-            profiles (display_name, first_name, last_name)
-          `)
-                    .eq('care_team_id', careTeamId);
+                        *,
+                        recorded_by_profile:profiles!recorded_by (display_name, first_name, last_name)
+                    `)
+                    .eq('care_team_id', careTeamId)
+                    .order('recorded_at', { ascending: false });
 
                 if (startDate) {
                     query.gte('recorded_at', startDate.toISOString());
+                }
+                if (endDate) {
+                    query.lte('recorded_at', endDate.toISOString());
                 }
 
                 const { data: vitals, error: vitalsError } = await query;
@@ -166,30 +184,25 @@ export const ExportDataDialog = ({ careTeamId, careRecipientName }: ExportDataDi
 
         // Add medication logs
         if (data.medicationLogs && data.medicationLogs.length > 0) {
-            csvContent += 'Medication Log\n';
-            csvContent += 'Date,Time,Medication,Dosage,Given By,Notes\n';
+            csvContent += 'Medication Administration Log\n';
+            csvContent += 'Date,Time,Medication,Dosage Given,Amount,Unit,Given By,Notes\n';
             data.medicationLogs.forEach((log: any) => {
                 const dateTime = new Date(log.administered_at);
                 const givenBy = log.administered_by_profile?.display_name || `${log.administered_by_profile?.first_name} ${log.administered_by_profile?.last_name}`.trim();
-                csvContent += `"${formatDate(dateTime, 'MM/dd/yyyy')}","${formatDate(dateTime, 'h:mm a')}","${log.medications?.name || ''}","${log.dose_amount || ''}","${givenBy}","${log.notes || ''}"\n`;
+                csvContent += `"${formatDate(dateTime, 'MM/dd/yyyy')}","${formatDate(dateTime, 'h:mm a')}","${log.medications?.name || ''}","${log.dose_amount || ''} ${log.dose_unit || ''}","${log.dose_amount || ''}","${log.dose_unit || ''}","${givenBy}","${log.notes || ''}"\n`;
             });
             csvContent += '\n';
         }
 
         // Add vitals
         if (data.vitals && data.vitals.length > 0) {
-            csvContent += 'Health Vitals\n';
-            csvContent += 'Date,Time,Weight,Blood Pressure,Heart Rate,Temperature,Blood Sugar,Oxygen Saturation,Recorded By,Notes\n';
+            csvContent += 'Health Vitals & Measurements\n';
+            csvContent += 'Date,Time,Vital Type,Value,Unit,Recorded By,Notes\n';
             data.vitals.forEach((vital: any) => {
                 const dateTime = new Date(vital.recorded_at);
-                const recordedBy = vital.profiles?.display_name || `${vital.profiles?.first_name} ${vital.profiles?.last_name}`.trim();
-                const bp = vital.blood_pressure_systolic && vital.blood_pressure_diastolic
-                    ? `${vital.blood_pressure_systolic}/${vital.blood_pressure_diastolic}`
-                    : '';
-                const weight = vital.weight ? `${vital.weight} ${vital.weight_unit}` : '';
-                const temp = vital.temperature ? `${vital.temperature}°${vital.temperature_unit}` : '';
+                const recordedBy = vital.recorded_by_profile?.display_name || `${vital.recorded_by_profile?.first_name} ${vital.recorded_by_profile?.last_name}`.trim();
 
-                csvContent += `"${formatDate(dateTime, 'MM/dd/yyyy')}","${formatDate(dateTime, 'h:mm a')}","${weight}","${bp}","${vital.heart_rate || ''}","${temp}","${vital.blood_sugar || ''}","${vital.oxygen_saturation || ''}","${recordedBy}","${vital.notes || ''}"\n`;
+                csvContent += `"${formatDate(dateTime, 'MM/dd/yyyy')}","${formatDate(dateTime, 'h:mm a')}","${vital.vital_type || ''}","${vital.value || ''}","${vital.unit || ''}","${recordedBy}","${vital.notes || ''}"\n`;
             });
             csvContent += '\n';
         }
@@ -242,15 +255,55 @@ export const ExportDataDialog = ({ careTeamId, careRecipientName }: ExportDataDi
         // Add medications
         if (data.medications && data.medications.length > 0) {
             htmlContent += '<h2>Current Medications</h2><table>';
-            htmlContent += '<tr><th>Medication</th><th>Dosage</th><th>Frequency</th><th>Instructions</th><th>Doctor</th></tr>';
+            htmlContent += '<tr><th>Medication</th><th>Dosage</th><th>Frequency</th><th>Instructions</th><th>Doctor</th><th>Pharmacy</th></tr>';
             data.medications.forEach((med: any) => {
                 htmlContent += `<tr>
-          <td>${med.name}</td>
-          <td>${med.dosage || ''}</td>
-          <td>${med.frequency || ''}</td>
-          <td>${med.instructions || ''}</td>
-          <td>${med.prescribing_doctor || ''}</td>
-        </tr>`;
+                    <td>${med.name}</td>
+                    <td>${med.dosage || ''}</td>
+                    <td>${med.frequency || ''}</td>
+                    <td>${med.instructions || ''}</td>
+                    <td>${med.prescribing_doctor || ''}</td>
+                    <td>${med.pharmacy || ''}</td>
+                </tr>`;
+            });
+            htmlContent += '</table>';
+        }
+
+        // Add medication logs
+        if (data.medicationLogs && data.medicationLogs.length > 0) {
+            htmlContent += '<h2>Medication Administration History</h2><table>';
+            htmlContent += '<tr><th>Date & Time</th><th>Medication</th><th>Dosage Given</th><th>Given By</th><th>Notes</th></tr>';
+            data.medicationLogs.forEach((log: any) => {
+                const dateTime = new Date(log.administered_at);
+                const givenBy = log.administered_by_profile?.display_name || `${log.administered_by_profile?.first_name} ${log.administered_by_profile?.last_name}`.trim();
+                const dosage = log.dose_amount && log.dose_unit ? `${log.dose_amount} ${log.dose_unit}` : (log.dose_amount || '');
+                htmlContent += `<tr>
+                    <td>${formatDate(dateTime, 'MM/dd/yyyy h:mm a')}</td>
+                    <td>${log.medications?.name || ''}</td>
+                    <td>${dosage}</td>
+                    <td>${givenBy}</td>
+                    <td>${log.notes || ''}</td>
+                </tr>`;
+            });
+            htmlContent += '</table>';
+        }
+
+        // Add vitals
+        if (data.vitals && data.vitals.length > 0) {
+            htmlContent += '<h2>Health Vitals & Measurements</h2><table>';
+            htmlContent += '<tr><th>Date & Time</th><th>Vital Type</th><th>Value</th><th>Unit</th><th>Recorded By</th><th>Notes</th></tr>';
+            data.vitals.forEach((vital: any) => {
+                const dateTime = new Date(vital.recorded_at);
+                const recordedBy = vital.recorded_by_profile?.display_name || `${vital.recorded_by_profile?.first_name} ${vital.recorded_by_profile?.last_name}`.trim();
+
+                htmlContent += `<tr>
+                    <td>${formatDate(dateTime, 'MM/dd/yyyy h:mm a')}</td>
+                    <td>${vital.vital_type || ''}</td>
+                    <td>${vital.value || ''}</td>
+                    <td>${vital.unit || ''}</td>
+                    <td>${recordedBy}</td>
+                    <td>${vital.notes || ''}</td>
+                </tr>`;
             });
             htmlContent += '</table>';
         }
@@ -298,7 +351,7 @@ export const ExportDataDialog = ({ careTeamId, careRecipientName }: ExportDataDi
                 <DialogHeader>
                     <DialogTitle>Export Health Data</DialogTitle>
                     <DialogDescription>
-                        Choose what data to export and in what format for appointments or sharing.
+                        Export comprehensive health records including medications, vitals, and care history for appointments, sharing with providers, or personal records.
                     </DialogDescription>
                 </DialogHeader>
 
@@ -324,7 +377,7 @@ export const ExportDataDialog = ({ careTeamId, careRecipientName }: ExportDataDi
                                         setExportOptions(prev => ({ ...prev, medicationLogs: checked as boolean }))
                                     }
                                 />
-                                <Label htmlFor="medication-logs">Medication History</Label>
+                                <Label htmlFor="medication-logs">Medication Administration History</Label>
                             </div>
                             <div className="flex items-center space-x-2">
                                 <Checkbox
@@ -334,7 +387,7 @@ export const ExportDataDialog = ({ careTeamId, careRecipientName }: ExportDataDi
                                         setExportOptions(prev => ({ ...prev, vitals: checked as boolean }))
                                     }
                                 />
-                                <Label htmlFor="vitals">Health Vitals</Label>
+                                <Label htmlFor="vitals">Health Vitals & Measurements</Label>
                             </div>
                             <div className="flex items-center space-x-2">
                                 <Checkbox
@@ -344,7 +397,7 @@ export const ExportDataDialog = ({ careTeamId, careRecipientName }: ExportDataDi
                                         setExportOptions(prev => ({ ...prev, allergies: checked as boolean }))
                                     }
                                 />
-                                <Label htmlFor="allergies">Allergies</Label>
+                                <Label htmlFor="allergies">Known Allergies</Label>
                             </div>
                         </div>
                     </div>
@@ -356,12 +409,14 @@ export const ExportDataDialog = ({ careTeamId, careRecipientName }: ExportDataDi
                                 <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
-                                <SelectItem value="all">All Time</SelectItem>
-                                <SelectItem value="week">Last Week</SelectItem>
-                                <SelectItem value="month">Last Month</SelectItem>
+                                <SelectItem value="today">Today Only</SelectItem>
+                                <SelectItem value="yesterday">Yesterday Only</SelectItem>
+                                <SelectItem value="week">Last 7 Days</SelectItem>
+                                <SelectItem value="month">Last 30 Days</SelectItem>
                                 <SelectItem value="3months">Last 3 Months</SelectItem>
                                 <SelectItem value="6months">Last 6 Months</SelectItem>
                                 <SelectItem value="year">Last Year</SelectItem>
+                                <SelectItem value="all">All Time</SelectItem>
                             </SelectContent>
                         </Select>
                     </div>

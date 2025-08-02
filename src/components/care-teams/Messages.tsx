@@ -377,7 +377,7 @@ export const Messages = ({ careTeamId, careTeamName }: MessagesProps) => {
                                     variant: "destructive",
                                     duration: 8000,
                                 });
-                                
+
                                 // Continue without the file upload - just save the message
                                 console.log('Continuing without file upload due to RLS policy issue');
                                 return; // Skip the rest of the upload process for this file
