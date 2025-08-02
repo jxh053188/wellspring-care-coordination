@@ -89,10 +89,10 @@ export const SendMessageDialog = ({ open, onOpenChange, careTeamId, onMessageSen
             if (selectedFile) {
                 setUploadingFile(true);
 
-                // Generate unique filename
+                // Generate unique filename with user folder prefix
                 const fileExt = selectedFile.name.split('.').pop();
                 const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
-                const filePath = `message-attachments/${fileName}`;
+                const filePath = `${user!.id}/${fileName}`; // Use auth user ID as folder prefix
 
                 // Upload file to Supabase storage
                 const { data: uploadData, error: uploadError } = await supabase.storage
@@ -120,7 +120,7 @@ export const SendMessageDialog = ({ open, onOpenChange, careTeamId, onMessageSen
                         file_type: fileType,
                         mime_type: selectedFile.type,
                         storage_path: filePath,
-                        uploaded_by: profile.id,
+                        uploaded_by: profile.id, // Use profile ID instead of user ID
                     });
 
                 if (attachmentError) {
