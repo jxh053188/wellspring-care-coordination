@@ -40,6 +40,7 @@ import { SendMessageDialog } from '@/components/care-teams/SendMessageDialog';
 
 interface Profile {
     id: string;
+    user_id: string;
     display_name: string;
     first_name: string;
     last_name: string;
@@ -153,8 +154,8 @@ const CareTeamDetails = () => {
                 (membersData || []).map(async (member) => {
                     const { data: profileData, error: profileError } = await supabase
                         .from('profiles')
-                        .select('id, display_name, first_name, last_name, phone, avatar_url')
-                        .eq('id', member.user_id)
+                        .select('id, display_name, first_name, last_name, phone, avatar_url, user_id')
+                        .eq('user_id', member.user_id)
                         .single();
 
                     return {
@@ -162,7 +163,8 @@ const CareTeamDetails = () => {
                         role: member.role,
                         joined_at: member.joined_at,
                         profiles: profileData || {
-                            id: member.user_id,
+                            id: '',
+                            user_id: member.user_id,
                             display_name: 'Unknown User',
                             first_name: '',
                             last_name: '',
@@ -376,17 +378,6 @@ const CareTeamDetails = () => {
 
     const handleRemoveMember = async (member: CareTeamMember) => {
         try {
-            // Get the user_id from the profile first
-            const { data: profileData, error: profileError } = await supabase
-                .from('profiles')
-                .select('user_id')
-                .eq('id', member.profiles.id)
-                .single();
-
-            if (profileError || !profileData) {
-                throw new Error(`Failed to get user data: ${profileError?.message}`);
-            }
-
             // Delete from care_team_members
             const { error: memberError } = await supabase
                 .from('care_team_members')
@@ -401,7 +392,7 @@ const CareTeamDetails = () => {
             if (careTeam) {
                 const { error: cleanupError } = await supabase
                     .rpc('cleanup_user_invitations', {
-                        p_user_id: profileData.user_id,
+                        p_user_id: member.profiles.user_id,
                         p_care_team_id: careTeam.id
                     } as { p_user_id: string; p_care_team_id: string });
 
@@ -615,7 +606,7 @@ const CareTeamDetails = () => {
                                             <Pill className="h-6 w-6 text-[#03bd9e]" />
                                             <span className="text-sm">Log Medicine</span>
                                         </Button>
-                                        
+
                                         <Button
                                             variant="outline"
                                             className="h-20 flex-col space-y-2"
@@ -624,7 +615,7 @@ const CareTeamDetails = () => {
                                             <Stethoscope className="h-6 w-6 text-[#ff6b6b]" />
                                             <span className="text-sm">Record Vital</span>
                                         </Button>
-                                        
+
                                         <Button
                                             variant="outline"
                                             className="h-20 flex-col space-y-2"
@@ -633,7 +624,7 @@ const CareTeamDetails = () => {
                                             <MessageSquare className="h-6 w-6 text-[#00a9ff]" />
                                             <span className="text-sm">Send Message</span>
                                         </Button>
-                                        
+
                                         <Button
                                             variant="outline"
                                             className="h-20 flex-col space-y-2"
@@ -695,7 +686,7 @@ const CareTeamDetails = () => {
                                                 >
                                                     {member.role}
                                                 </Badge>
-                                                {user && member.profiles.id !== user.id && (
+                                                {user && member.profiles.user_id !== user.id && (
                                                     <DropdownMenu>
                                                         <DropdownMenuTrigger asChild>
                                                             <Button variant="ghost" size="sm" className="h-8 w-8 p-0">

@@ -12,31 +12,6 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "13.0.4"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          operationName?: string
-          query?: string
-          variables?: Json
-          extensions?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       allergies: {
@@ -634,6 +609,132 @@ export type Database = {
           },
         ]
       }
+      mood_logs: {
+        Row: {
+          care_team_id: string
+          created_at: string
+          energy_level: number | null
+          id: string
+          logged_at: string
+          logged_by: string
+          mood_level: number
+          mood_type: string
+          notes: string | null
+          pain_level: number | null
+          sleep_quality: number | null
+          stress_level: number | null
+          updated_at: string
+        }
+        Insert: {
+          care_team_id: string
+          created_at?: string
+          energy_level?: number | null
+          id?: string
+          logged_at?: string
+          logged_by: string
+          mood_level: number
+          mood_type: string
+          notes?: string | null
+          pain_level?: number | null
+          sleep_quality?: number | null
+          stress_level?: number | null
+          updated_at?: string
+        }
+        Update: {
+          care_team_id?: string
+          created_at?: string
+          energy_level?: number | null
+          id?: string
+          logged_at?: string
+          logged_by?: string
+          mood_level?: number
+          mood_type?: string
+          notes?: string | null
+          pain_level?: number | null
+          sleep_quality?: number | null
+          stress_level?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mood_logs_care_team_id_fkey"
+            columns: ["care_team_id"]
+            isOneToOne: false
+            referencedRelation: "care_teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "mood_logs_logged_by_fkey"
+            columns: ["logged_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      nutrition_logs: {
+        Row: {
+          calories: number | null
+          care_team_id: string
+          created_at: string
+          food_name: string | null
+          id: string
+          log_type: string
+          logged_at: string
+          logged_by: string
+          meal_type: string | null
+          notes: string | null
+          portion_size: string | null
+          updated_at: string
+          water_amount_ml: number | null
+        }
+        Insert: {
+          calories?: number | null
+          care_team_id: string
+          created_at?: string
+          food_name?: string | null
+          id?: string
+          log_type: string
+          logged_at?: string
+          logged_by: string
+          meal_type?: string | null
+          notes?: string | null
+          portion_size?: string | null
+          updated_at?: string
+          water_amount_ml?: number | null
+        }
+        Update: {
+          calories?: number | null
+          care_team_id?: string
+          created_at?: string
+          food_name?: string | null
+          id?: string
+          log_type?: string
+          logged_at?: string
+          logged_by?: string
+          meal_type?: string | null
+          notes?: string | null
+          portion_size?: string | null
+          updated_at?: string
+          water_amount_ml?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "nutrition_logs_care_team_id_fkey"
+            columns: ["care_team_id"]
+            isOneToOne: false
+            referencedRelation: "care_teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "nutrition_logs_logged_by_fkey"
+            columns: ["logged_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pending_invitations: {
         Row: {
           care_team_id: string
@@ -876,9 +977,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       care_team_role: [

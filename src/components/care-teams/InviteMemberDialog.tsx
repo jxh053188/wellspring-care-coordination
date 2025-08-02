@@ -81,13 +81,13 @@ export function InviteMemberDialog({
             if (existingUserData && existingUserData.length > 0) {
                 const userData = existingUserData[0] as { user_id: string; profile_id: string };
 
-                if (userData.profile_id) {
+                if (userData.user_id) {
                     // Check if they're already a member of this care team
                     const { data: existingMember, error: memberCheckError } = await supabase
                         .from('care_team_members')
                         .select('id')
                         .eq('care_team_id', careTeamId)
-                        .eq('user_id', userData.profile_id)
+                        .eq('user_id', userData.user_id)
                         .single();
 
                     if (memberCheckError && memberCheckError.code !== 'PGRST116') {
@@ -109,7 +109,7 @@ export function InviteMemberDialog({
                         .from('care_team_members')
                         .insert({
                             care_team_id: careTeamId,
-                            user_id: userData.profile_id,
+                            user_id: userData.user_id,
                             role: formData.role,
                             invited_by: currentProfile.id,
                         });

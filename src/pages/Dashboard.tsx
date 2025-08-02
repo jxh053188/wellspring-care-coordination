@@ -38,31 +38,42 @@ const Dashboard = () => {
 
   const fetchCareTeams = useCallback(async () => {
     try {
-      console.log('Fetching care teams for user:', user?.id);
+      console.log('=== Dashboard fetchCareTeams Debug ===');
+      console.log('User object:', user);
+      console.log('User ID:', user?.id);
 
-      // First, get the user's profile ID
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('user_id', user!.id)
-        .single();
-
-      console.log('Profile data:', profileData, 'Error:', profileError);
-
-      if (profileError || !profileData) {
-        console.error('Failed to find user profile');
+      if (!user?.id) {
+        console.error('No user ID available');
         setCareTeams([]);
         setLoading(false);
         return;
       }
 
-      // Get care team memberships using the profile ID
+      const { data: userProfile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .single();
+
+      if (profileError || !userProfile) {
+        console.error('Failed to fetch user profile:', profileError);
+        toast({
+          title: "Error",
+          description: "Could not load your profile information",
+          variant: "destructive",
+        });
+        setCareTeams([]);
+        setLoading(false);
+        return;
+      }
+      // Get care team memberships using the user ID
+      console.log('Querying care_team_members with user_id:', user.id);
       const { data: memberData, error: memberError } = await supabase
         .from('care_team_members')
         .select('care_team_id, role')
-        .eq('user_id', profileData.id);
+        .eq('user_id', userProfile.id);
 
-      console.log('Member data:', memberData, 'Error:', memberError);
+      console.log('Member query result:', { memberData, memberError });
 
       if (memberError) {
         console.error('Member query failed:', memberError);
@@ -72,25 +83,39 @@ const Dashboard = () => {
       }
 
       if (!memberData || memberData.length === 0) {
-        console.log('No memberships found');
+        console.log('No memberships found - user is not part of any care teams');
         setCareTeams([]);
         setLoading(false);
         return;
       }
 
+      console.log('Found memberships:', memberData);
+
       // Now try to fetch the actual care teams
       const teamIds = memberData.map(m => m.care_team_id);
+      console.log('Fetching care teams with IDs:', teamIds);
+
       const { data: teamsData, error: teamsError } = await supabase
         .from('care_teams')
         .select('*')
         .in('id', teamIds);
 
-      console.log('Teams data:', teamsData, 'Error:', teamsError);
+      console.log('Teams query result:', { teamsData, teamsError });
 
-      if (teamsError) throw teamsError;
+      if (teamsError) {
+        console.error('Teams query failed:', teamsError);
+        throw teamsError;
+      }
 
-      // Transform the data to match the expected interface
-      const teams: CareTeam[] = (teamsData || []).map(team => ({
+      if (!teamsData || teamsData.length === 0) {
+        console.log('No care teams found with those IDs');
+        setCareTeams([]);
+        setLoading(false);
+        return;
+      }
+
+      // For now, let's simplify and just show the teams without member details
+      const teams: CareTeam[] = teamsData.map(team => ({
         id: team.id,
         name: team.name,
         description: team.description || '',
@@ -101,13 +126,16 @@ const Dashboard = () => {
           .map(m => ({
             role: m.role,
             profiles: {
-              id: 'temp-id',
-              display_name: user?.user_metadata?.first_name || 'User',
-              first_name: user?.user_metadata?.first_name || '',
-              last_name: user?.user_metadata?.last_name || '',
+              id: user.id,
+              display_name: user.user_metadata?.first_name || 'You',
+              first_name: user.user_metadata?.first_name || '',
+              last_name: user.user_metadata?.last_name || '',
             }
           }))
-      })); setCareTeams(teams);
+      }));
+
+      console.log('Final teams data:', teams);
+      setCareTeams(teams);
     } catch (error) {
       console.error('Error fetching care teams:', error);
       toast({

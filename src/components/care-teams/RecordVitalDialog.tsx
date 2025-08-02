@@ -139,8 +139,8 @@ export const RecordVitalDialog = ({ open, onOpenChange, careTeamId, onVitalRecor
                     {/* Vital Type Selection */}
                     <div>
                         <Label htmlFor="vital_type">Vital Type *</Label>
-                        <Select 
-                            value={formData.vital_type} 
+                        <Select
+                            value={formData.vital_type}
                             onValueChange={handleVitalTypeChange}
                         >
                             <SelectTrigger>
@@ -177,8 +177,8 @@ export const RecordVitalDialog = ({ open, onOpenChange, careTeamId, onVitalRecor
                         </div>
                         <div>
                             <Label htmlFor="unit">Unit *</Label>
-                            <Select 
-                                value={formData.unit} 
+                            <Select
+                                value={formData.unit}
                                 onValueChange={(value) => setFormData(prev => ({ ...prev, unit: value }))}
                                 disabled={!selectedVitalType}
                             >
@@ -212,8 +212,8 @@ export const RecordVitalDialog = ({ open, onOpenChange, careTeamId, onVitalRecor
                         <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                             Cancel
                         </Button>
-                        <Button 
-                            type="submit" 
+                        <Button
+                            type="submit"
                             disabled={loading}
                             className="bg-[#ff6b6b] hover:bg-[#ff6b6b]/90"
                         >

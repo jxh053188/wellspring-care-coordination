@@ -214,8 +214,8 @@ export const LogMedicineDialog = ({ open, onOpenChange, careTeamId, onMedication
                                 No active medications found. Add medications first in the Health Dashboard.
                             </div>
                         ) : (
-                            <Select 
-                                value={formData.medicationId} 
+                            <Select
+                                value={formData.medicationId}
                                 onValueChange={(value) => setFormData(prev => ({ ...prev, medicationId: value }))}
                             >
                                 <SelectTrigger>
@@ -276,8 +276,8 @@ export const LogMedicineDialog = ({ open, onOpenChange, careTeamId, onMedication
                         </div>
                         <div>
                             <Label htmlFor="doseUnit">Unit *</Label>
-                            <Select 
-                                value={formData.doseUnit} 
+                            <Select
+                                value={formData.doseUnit}
                                 onValueChange={(value) => setFormData(prev => ({ ...prev, doseUnit: value }))}
                             >
                                 <SelectTrigger>
@@ -327,8 +327,8 @@ export const LogMedicineDialog = ({ open, onOpenChange, careTeamId, onMedication
                         <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                             Cancel
                         </Button>
-                        <Button 
-                            type="submit" 
+                        <Button
+                            type="submit"
                             disabled={loading || medications.length === 0}
                             className="bg-[#03bd9e] hover:bg-[#03bd9e]/90"
                         >

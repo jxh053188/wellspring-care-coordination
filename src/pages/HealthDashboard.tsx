@@ -13,11 +13,15 @@ import {
     Calendar,
     Activity,
     AlertTriangle,
-    Download
+    Download,
+    Apple,
+    Brain
 } from 'lucide-react';
 import { MedicationsTab } from '@/components/health/MedicationsTab';
 import { VitalsTab } from '@/components/health/VitalsTab';
 import { AllergiesTab } from '@/components/health/AllergiesTab';
+import { NutritionTab } from '@/components/health/NutritionTab';
+import { MoodTab } from '@/components/health/MoodTab';
 import { ExportDataDialog } from '@/components/health/ExportDataDialog';
 import { useToast } from '@/hooks/use-toast';
 import { Database } from '@/integrations/supabase/types';
@@ -49,36 +53,49 @@ const HealthDashboard = () => {
     const [medications, setMedications] = useState<Medication[]>([]);
     const [vitalsCount, setVitalsCount] = useState(0);
     const [allergiesCount, setAllergiesCount] = useState(0);
+    const [nutritionCount, setNutritionCount] = useState(0);
+    const [moodCount, setMoodCount] = useState(0);
     const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
     const [loading, setLoading] = useState(true);
+    const [showExportDialog, setShowExportDialog] = useState(false);
 
     const fetchCareTeams = useCallback(async () => {
         try {
-            console.log('Fetching care teams for user:', user?.id);
+            console.log('=== HealthDashboard fetchCareTeams Debug ===');
+            console.log('User object:', user);
+            console.log('User ID:', user?.id);
 
-            // First, get the user's profile ID
-            const { data: profileData, error: profileError } = await supabase
-                .from('profiles')
-                .select('id')
-                .eq('user_id', user!.id)
-                .single();
-
-            console.log('Profile data:', profileData, 'Error:', profileError);
-
-            if (profileError || !profileData) {
-                console.error('Failed to find user profile');
-                setCareTeams([]);
+            if (!user?.id) {
+                console.error('No user ID available');
                 setLoading(false);
                 return;
             }
 
-            // Get care team memberships using the profile ID
+            // First, let's check if this user has a profile
+            const { data: profileData, error: profileError } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('user_id', user.id)
+                .single();
+
+            console.log('Profile query result:', { profileData, profileError });
+
+            // Get care team memberships using the user ID
+            console.log('Querying care_team_members with user_id:', user.id);
             const { data: memberData, error: memberError } = await supabase
                 .from('care_team_members')
-                .select('care_team_id, role')
-                .eq('user_id', profileData.id);
+                .select('care_team_id, role, user_id')
+                .eq('user_id', profileData?.id);
 
-            console.log('Member data:', memberData, 'Error:', memberError);
+            console.log('Member query result:', { memberData, memberError });
+
+            // Also check if there are ANY care team members in the database
+            const { data: allMembers, error: allMembersError } = await supabase
+                .from('care_team_members')
+                .select('care_team_id, role, user_id')
+                .limit(5);
+
+            console.log('All members sample:', { allMembers, allMembersError });
 
             if (memberError) {
                 console.error('Member query failed:', memberError);
@@ -88,7 +105,8 @@ const HealthDashboard = () => {
             }
 
             if (!memberData || memberData.length === 0) {
-                console.log('No memberships found');
+                console.log('No memberships found - user is not part of any care teams');
+                console.log('This is normal for new users. Use "Join or Create a Care Team" button to get started.');
                 setCareTeams([]);
                 setLoading(false);
                 return;
@@ -162,6 +180,38 @@ const HealthDashboard = () => {
             if (allergiesError) throw allergiesError;
             setAllergiesCount(allergiesCount || 0);
 
+            // Fetch nutrition logs count from the last week (only if tables exist)
+            try {
+                const { count: nutritionCount, error: nutritionError } = await supabase
+                    .from('nutrition_logs')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('care_team_id', selectedTeam)
+                    .gte('logged_at', oneWeekAgo.toISOString());
+
+                if (!nutritionError) {
+                    setNutritionCount(nutritionCount || 0);
+                }
+            } catch (error) {
+                // Table doesn't exist yet, ignore error
+                setNutritionCount(0);
+            }
+
+            // Fetch mood logs count from the last week (only if tables exist)
+            try {
+                const { count: moodCount, error: moodError } = await supabase
+                    .from('mood_logs')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('care_team_id', selectedTeam)
+                    .gte('logged_at', oneWeekAgo.toISOString());
+
+                if (!moodError) {
+                    setMoodCount(moodCount || 0);
+                }
+            } catch (error) {
+                // Table doesn't exist yet, ignore error
+                setMoodCount(0);
+            }
+
             // TODO: Fetch recent activity from medication logs, vitals, etc.
             setRecentActivity([]);
         } catch (error) {
@@ -173,17 +223,6 @@ const HealthDashboard = () => {
         console.log('Creating test care team for user:', user?.id);
 
         try {
-            // First, get the user's profile ID
-            const { data: profileData, error: profileError } = await supabase
-                .from('profiles')
-                .select('id')
-                .eq('user_id', user!.id)
-                .single();
-
-            if (profileError || !profileData) {
-                throw new Error('Could not find your profile');
-            }
-
             // First create a care team
             console.log('Attempting to create care team...');
             const { data: careTeam, error: teamError } = await supabase
@@ -192,7 +231,7 @@ const HealthDashboard = () => {
                     name: 'My Family Care Team',
                     description: 'Primary care coordination for our family',
                     care_recipient_name: 'Mom',
-                    created_by: profileData.id,
+                    created_by: user!.id,
                 })
                 .select()
                 .single();
@@ -210,7 +249,7 @@ const HealthDashboard = () => {
                 .from('care_team_members')
                 .insert({
                     care_team_id: careTeam.id,
-                    user_id: profileData.id,
+                    user_id: user!.id,
                     role: 'admin',
                 });
 
@@ -321,7 +360,7 @@ const HealthDashboard = () => {
             {/* Main Content */}
             <main className="container mx-auto px-4 py-6">
                 {/* Quick Stats */}
-                <div className="grid gap-4 md:grid-cols-3 mb-6">
+                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5 mb-6">
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium">Active Medications</CardTitle>
@@ -344,6 +383,26 @@ const HealthDashboard = () => {
                     </Card>
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Nutrition Logs</CardTitle>
+                            <Apple className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">{nutritionCount}</div>
+                            <p className="text-xs text-muted-foreground">This week</p>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                            <CardTitle className="text-sm font-medium">Mood Entries</CardTitle>
+                            <Brain className="h-4 w-4 text-muted-foreground" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="text-2xl font-bold">{moodCount}</div>
+                            <p className="text-xs text-muted-foreground">This week</p>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                             <CardTitle className="text-sm font-medium">Allergies</CardTitle>
                             <AlertTriangle className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
@@ -356,9 +415,11 @@ const HealthDashboard = () => {
 
                 {/* Main Tabs */}
                 <Tabs defaultValue="medications" className="space-y-4">
-                    <TabsList className="grid w-full grid-cols-3">
+                    <TabsList className="grid w-full grid-cols-5">
                         <TabsTrigger value="medications">Medications</TabsTrigger>
                         <TabsTrigger value="vitals">Health & Vitals</TabsTrigger>
+                        <TabsTrigger value="nutrition">Nutrition</TabsTrigger>
+                        <TabsTrigger value="mood">Mood & Mental</TabsTrigger>
                         <TabsTrigger value="allergies">Allergies</TabsTrigger>
                     </TabsList>
 
@@ -372,6 +433,14 @@ const HealthDashboard = () => {
 
                     <TabsContent value="vitals">
                         <VitalsTab careTeamId={selectedTeam!} onVitalsChange={fetchHealthData} />
+                    </TabsContent>
+
+                    <TabsContent value="nutrition">
+                        <NutritionTab careTeamId={selectedTeam!} onNutritionChange={fetchHealthData} />
+                    </TabsContent>
+
+                    <TabsContent value="mood">
+                        <MoodTab careTeamId={selectedTeam!} onMoodChange={fetchHealthData} />
                     </TabsContent>
 
                     <TabsContent value="allergies">

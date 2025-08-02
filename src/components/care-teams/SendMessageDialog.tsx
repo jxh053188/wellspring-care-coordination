@@ -69,7 +69,7 @@ export const SendMessageDialog = ({ open, onOpenChange, careTeamId, onMessageSen
 
             // Handle file upload if present
             let messageId = null;
-            
+
             // Create message first
             const { data: messageData, error: messageError } = await supabase
                 .from('messages')
@@ -88,7 +88,7 @@ export const SendMessageDialog = ({ open, onOpenChange, careTeamId, onMessageSen
             // Upload file if present
             if (selectedFile) {
                 setUploadingFile(true);
-                
+
                 // Generate unique filename
                 const fileExt = selectedFile.name.split('.').pop();
                 const fileName = `${Date.now()}-${Math.random().toString(36).substring(2)}.${fileExt}`;
@@ -104,11 +104,11 @@ export const SendMessageDialog = ({ open, onOpenChange, careTeamId, onMessageSen
                 }
 
                 // Determine file type
-                const fileType = selectedFile.type.startsWith('image/') 
-                    ? 'image' 
+                const fileType = selectedFile.type.startsWith('image/')
+                    ? 'image'
                     : selectedFile.type.includes('pdf') || selectedFile.type.includes('document')
-                    ? 'document' 
-                    : 'other';
+                        ? 'document'
+                        : 'other';
 
                 // Create attachment record
                 const { error: attachmentError } = await supabase
@@ -132,7 +132,7 @@ export const SendMessageDialog = ({ open, onOpenChange, careTeamId, onMessageSen
 
             toast({
                 title: "Message Sent",
-                description: selectedFile 
+                description: selectedFile
                     ? "Your message and file have been sent to the care team."
                     : "Your message has been sent to the care team.",
             });
@@ -144,7 +144,7 @@ export const SendMessageDialog = ({ open, onOpenChange, careTeamId, onMessageSen
             if (fileInputRef.current) {
                 fileInputRef.current.value = '';
             }
-            
+
             onMessageSent();
             onOpenChange(false);
         } catch (error) {
@@ -219,9 +219,9 @@ export const SendMessageDialog = ({ open, onOpenChange, careTeamId, onMessageSen
                     {/* Message Type Selection */}
                     <div>
                         <Label htmlFor="messageType">Message Type</Label>
-                        <Select 
-                            value={formData.messageType} 
-                            onValueChange={(value: 'text' | 'alert' | 'announcement' | 'update') => 
+                        <Select
+                            value={formData.messageType}
+                            onValueChange={(value: 'text' | 'alert' | 'announcement' | 'update') =>
                                 setFormData(prev => ({ ...prev, messageType: value }))}
                         >
                             <SelectTrigger>
@@ -272,7 +272,7 @@ export const SendMessageDialog = ({ open, onOpenChange, careTeamId, onMessageSen
                                 className="hidden"
                                 accept="image/*,.pdf,.doc,.docx,.txt"
                             />
-                            
+
                             {!selectedFile ? (
                                 <Button
                                     type="button"
@@ -322,8 +322,8 @@ export const SendMessageDialog = ({ open, onOpenChange, careTeamId, onMessageSen
                         <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                             Cancel
                         </Button>
-                        <Button 
-                            type="submit" 
+                        <Button
+                            type="submit"
                             disabled={loading || uploadingFile || !formData.content.trim()}
                             className="bg-[#00a9ff] hover:bg-[#00a9ff]/90"
                         >

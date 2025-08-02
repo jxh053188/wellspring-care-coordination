@@ -20,6 +20,8 @@ export const ExportDataDialog = ({ careTeamId, careRecipientName }: ExportDataDi
     const [exportOptions, setExportOptions] = useState({
         medications: true,
         medicationLogs: true,
+        foodLogs: true,
+        moodLogs: true,
         vitals: true,
         allergies: true,
     });
@@ -103,6 +105,44 @@ export const ExportDataDialog = ({ careTeamId, careRecipientName }: ExportDataDi
                 const { data: logs, error: logsError } = await query;
                 if (logsError) throw logsError;
                 data.medicationLogs = logs;
+            }
+
+            //fetch food logs
+            if (exportOptions.foodLogs) {
+                const query = supabase
+                    .from('nutrition_logs')
+                    .select('*')
+                    .eq('care_team_id', careTeamId)
+                    .order('created_at', { ascending: false });
+                if (startDate) {
+                    query.gte('created_at', startDate.toISOString());
+                }
+                if (endDate) {
+                    query.lte('created_at', endDate.toISOString());
+                }
+
+                const { data: foodLogs, error: foodLogsError } = await query;
+                if (foodLogsError) throw foodLogsError;
+                data.foodLogs = foodLogs;
+            }
+
+            //fetch mood logs
+            if (exportOptions.moodLogs) {
+                const query = supabase
+                    .from('mood_logs')
+                    .select('*')
+                    .eq('care_team_id', careTeamId)
+                    .order('created_at', { ascending: false });
+                if (startDate) {
+                    query.gte('created_at', startDate.toISOString());
+                }
+                if (endDate) {
+                    query.lte('created_at', endDate.toISOString());
+                }
+
+                const { data: moodLogs, error: moodLogsError } = await query;
+                if (moodLogsError) throw moodLogsError;
+                data.moodLogs = moodLogs;
             }
 
             // Fetch vitals
@@ -207,6 +247,29 @@ export const ExportDataDialog = ({ careTeamId, careRecipientName }: ExportDataDi
             csvContent += '\n';
         }
 
+        //add food logs
+        if (data.foodLogs && data.foodLogs.length > 0) {
+            csvContent += 'Food & Nutrition Logs\n';
+            csvContent += 'Date,Time,Type,Food,Portion Size,Calories,Notes\n';
+            data.foodLogs.forEach((log: any) => {
+                const dateTime = new Date(log.created_at);
+                csvContent += `"${formatDate(dateTime, 'MM/dd/yyyy')}","${formatDate(dateTime, 'h:mm a')}","${log.meal_type || ''}","${log.food_name || ''}","${log.portion_size || ''}","${log.calories || ''}","${log.notes || ''}"\n`;
+            });
+            csvContent += '\n';
+        }
+
+        //add mood logs
+        if (data.moodLogs && data.moodLogs.length > 0) {
+            csvContent += 'Mood & Mental Health Logs\n';
+            csvContent += 'Date,Time,Mood,Mood Level,Energy Level,Sleep Quality,Stress Level,Pain Level,Notes\n';
+            data.moodLogs.forEach((log: any) => {
+                const dateTime = new Date(log.created_at);
+                csvContent += `"${formatDate(dateTime, 'MM/dd/yyyy')}","${formatDate(dateTime, 'h:mm a')}","${log.mood_type || ''}","${log.mood_level || ''}","${log.energy_level || ''}","${log.sleep_quality || ''}","${log.stress_level || ''}","${log.pain_level || ''}","${log.notes || ''}"\n`;
+            });
+            csvContent += '\n';
+        }
+
+
         // Add allergies
         if (data.allergies && data.allergies.length > 0) {
             csvContent += 'Allergies\n';
@@ -282,6 +345,44 @@ export const ExportDataDialog = ({ careTeamId, careRecipientName }: ExportDataDi
                     <td>${log.medications?.name || ''}</td>
                     <td>${dosage}</td>
                     <td>${givenBy}</td>
+                    <td>${log.notes || ''}</td>
+                </tr>`;
+            });
+            htmlContent += '</table>';
+        }
+
+        // Add food logs
+        if (data.foodLogs && data.foodLogs.length > 0) {
+            htmlContent += '<h2>Food & Nutrition Logs</h2><table>';
+            htmlContent += '<tr><th>Date & Time</th><th>Type</th><th>Food</th><th>Portion Size</th><th>Calories</th><th>Notes</th></tr>';
+            data.foodLogs.forEach((log: any) => {
+                const dateTime = new Date(log.created_at);
+                htmlContent += `<tr>
+                    <td>${formatDate(dateTime, 'MM/dd/yyyy h:mm a')}</td>
+                    <td>${log.meal_type || ''}</td>
+                    <td>${log.food_name || ''}</td>
+                    <td>${log.portion_size || ''}</td>
+                    <td>${log.calories || ''}</td>
+                    <td>${log.notes || ''}</td>
+                </tr>`;
+            });
+            htmlContent += '</table>';
+        }
+
+        // Add mood logs
+        if (data.moodLogs && data.moodLogs.length > 0) {
+            htmlContent += '<h2>Mood & Mental Health Logs</h2><table>';
+            htmlContent += '<tr><th>Date & Time</th><th>Mood</th><th>Mood Level</th><th>Energy Level</th><th>Sleep Quality</th><th>Stress Level</th><th>Pain Level</th><th>Notes</th></tr>';
+            data.moodLogs.forEach((log: any) => {
+                const dateTime = new Date(log.created_at);
+                htmlContent += `<tr>
+                    <td>${formatDate(dateTime, 'MM/dd/yyyy h:mm a')}</td>
+                    <td>${log.mood_type || ''}</td>
+                    <td>${log.mood_level || ''}</td>
+                    <td>${log.energy_level || ''}</td>
+                    <td>${log.sleep_quality || ''}</td>
+                    <td>${log.stress_level || ''}</td>
+                    <td>${log.pain_level || ''}</td>
                     <td>${log.notes || ''}</td>
                 </tr>`;
             });
@@ -388,6 +489,26 @@ export const ExportDataDialog = ({ careTeamId, careRecipientName }: ExportDataDi
                                     }
                                 />
                                 <Label htmlFor="vitals">Health Vitals & Measurements</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <Checkbox
+                                    id="food-logs"
+                                    checked={exportOptions.foodLogs}
+                                    onCheckedChange={(checked) =>
+                                        setExportOptions(prev => ({ ...prev, foodLogs: checked as boolean }))
+                                    }
+                                />
+                                <Label htmlFor="food-logs">Food & Nutrition Logs</Label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <Checkbox
+                                    id="mood-logs"
+                                    checked={exportOptions.moodLogs}
+                                    onCheckedChange={(checked) =>
+                                        setExportOptions(prev => ({ ...prev, moodLogs: checked as boolean }))
+                                    }
+                                />
+                                <Label htmlFor="mood-logs">Mood & Mental Health Logs</Label>
                             </div>
                             <div className="flex items-center space-x-2">
                                 <Checkbox
