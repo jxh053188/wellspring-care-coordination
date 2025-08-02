@@ -792,6 +792,83 @@ export type Database = {
           },
         ]
       }
+      journal_entry: {
+        Row: {
+          id: string
+          user_id: string
+          title: string | null
+          content_json: Json
+          content_text: string | null
+          prompt_id: string | null
+          mood_rating: number | null
+          tags: string[] | null
+          is_private: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          title?: string | null
+          content_json: Json
+          content_text?: string | null
+          prompt_id?: string | null
+          mood_rating?: number | null
+          tags?: string[] | null
+          is_private?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          title?: string | null
+          content_json?: Json
+          content_text?: string | null
+          prompt_id?: string | null
+          mood_rating?: number | null
+          tags?: string[] | null
+          is_private?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "journal_entry_prompt_id_fkey"
+            columns: ["prompt_id"]
+            isOneToOne: false
+            referencedRelation: "journal_prompt"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      journal_prompt: {
+        Row: {
+          id: string
+          prompt: string
+          category: string
+          is_active: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          prompt: string
+          category?: string
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          prompt?: string
+          category?: string
+          is_active?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null

@@ -8,6 +8,7 @@ import { Users, Plus, Heart, Shield, Activity } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Link, useNavigate } from 'react-router-dom';
 import { CreateCareTeamDialog } from '@/components/care-teams/CreateCareTeamDialog';
+import JournalSection from '@/components/journal/JournalSection';
 
 interface Profile {
   id: string;
@@ -212,93 +213,107 @@ const Dashboard = () => {
       <main className="container mx-auto px-4 py-8">
         {careTeams.length === 0 ? (
           // Empty state
-          <div className="text-center py-12">
-            <div className="mx-auto w-24 h-24 bg-secondary rounded-full flex items-center justify-center mb-6">
-              <Users className="h-12 w-12 text-muted-foreground" />
+          <div className="space-y-8">
+            <div className="text-center py-12">
+              <div className="mx-auto w-24 h-24 bg-secondary rounded-full flex items-center justify-center mb-6">
+                <Users className="h-12 w-12 text-muted-foreground" />
+              </div>
+              <h2 className="text-2xl font-semibold mb-4">Welcome to Wellspring</h2>
+              <p className="text-muted-foreground mb-8 max-w-md mx-auto">
+                Start by creating your first care team to coordinate care for your loved one with family, friends, and professionals.
+              </p>
+              <Button size="lg" className="gap-2" onClick={handleCreateCareTeam}>
+                <Plus className="h-5 w-5" />
+                Create Your First Care Team
+              </Button>
+              <div className="mt-4">
+                <p className="text-sm text-muted-foreground mb-2">Or explore our features:</p>
+                <Link to="/health">
+                  <Button variant="outline" className="gap-2">
+                    <Activity className="h-4 w-4" />
+                    View Health Dashboard
+                  </Button>
+                </Link>
+              </div>
             </div>
-            <h2 className="text-2xl font-semibold mb-4">Welcome to Wellspring</h2>
-            <p className="text-muted-foreground mb-8 max-w-md mx-auto">
-              Start by creating your first care team to coordinate care for your loved one with family, friends, and professionals.
-            </p>
-            <Button size="lg" className="gap-2" onClick={handleCreateCareTeam}>
-              <Plus className="h-5 w-5" />
-              Create Your First Care Team
-            </Button>
-            <div className="mt-4">
-              <p className="text-sm text-muted-foreground mb-2">Or explore our features:</p>
-              <Link to="/health">
-                <Button variant="outline" className="gap-2">
-                  <Activity className="h-4 w-4" />
-                  View Health Dashboard
-                </Button>
-              </Link>
+
+            {/* Journal Section - always show */}
+            <div className="max-w-4xl mx-auto">
+              <JournalSection />
             </div>
           </div>
         ) : (
           // Care teams list
-          <div>
-            <div className="flex justify-between items-center mb-8">
-              <div>
-                <h2 className="text-3xl font-bold">Your Care Teams</h2>
-                <p className="text-muted-foreground">
-                  Coordinate care and stay connected with your loved ones
-                </p>
+          <div className="space-y-8">
+            <div>
+              <div className="flex justify-between items-center mb-8">
+                <div>
+                  <h2 className="text-3xl font-bold">Your Care Teams</h2>
+                  <p className="text-muted-foreground">
+                    Coordinate care and stay connected with your loved ones
+                  </p>
+                </div>
+                <Button className="gap-2" onClick={handleCreateCareTeam}>
+                  <Plus className="h-5 w-5" />
+                  New Care Team
+                </Button>
               </div>
-              <Button className="gap-2" onClick={handleCreateCareTeam}>
-                <Plus className="h-5 w-5" />
-                New Care Team
-              </Button>
+
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {careTeams.map((team) => (
+                  <Card
+                    key={team.id}
+                    className="hover:shadow-lg transition-shadow cursor-pointer"
+                    onClick={() => handleCareTeamClick(team.id)}
+                  >
+                    <CardHeader>
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <CardTitle className="text-lg">{team.name}</CardTitle>
+                          <CardDescription>
+                            Caring for {team.care_recipient_name}
+                          </CardDescription>
+                        </div>
+                        <Shield className="h-5 w-5 text-primary" />
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      {team.description && (
+                        <p className="text-sm text-muted-foreground mb-4">{team.description}</p>
+                      )}
+
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2">
+                          <Users className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm font-medium">Team Members</span>
+                        </div>
+
+                        <div className="space-y-2">
+                          {team.care_team_members.map((member, index) => (
+                            <div key={index} className="flex items-center justify-between">
+                              <span className="text-sm">
+                                {member.profiles.display_name ||
+                                  `${member.profiles.first_name} ${member.profiles.last_name}`.trim()}
+                              </span>
+                              <Badge
+                                variant="secondary"
+                                className={getRoleColor(member.role)}
+                              >
+                                {member.role}
+                              </Badge>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             </div>
 
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {careTeams.map((team) => (
-                <Card
-                  key={team.id}
-                  className="hover:shadow-lg transition-shadow cursor-pointer"
-                  onClick={() => handleCareTeamClick(team.id)}
-                >
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <CardTitle className="text-lg">{team.name}</CardTitle>
-                        <CardDescription>
-                          Caring for {team.care_recipient_name}
-                        </CardDescription>
-                      </div>
-                      <Shield className="h-5 w-5 text-primary" />
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    {team.description && (
-                      <p className="text-sm text-muted-foreground mb-4">{team.description}</p>
-                    )}
-
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2">
-                        <Users className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm font-medium">Team Members</span>
-                      </div>
-
-                      <div className="space-y-2">
-                        {team.care_team_members.map((member, index) => (
-                          <div key={index} className="flex items-center justify-between">
-                            <span className="text-sm">
-                              {member.profiles.display_name ||
-                                `${member.profiles.first_name} ${member.profiles.last_name}`.trim()}
-                            </span>
-                            <Badge
-                              variant="secondary"
-                              className={getRoleColor(member.role)}
-                            >
-                              {member.role}
-                            </Badge>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+            {/* Journal Section */}
+            <div className="max-w-4xl mx-auto">
+              <JournalSection />
             </div>
           </div>
         )}
