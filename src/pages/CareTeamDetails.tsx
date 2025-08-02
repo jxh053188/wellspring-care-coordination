@@ -11,12 +11,10 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import {
     ArrowLeft,
     Users,
-    Settings,
     Heart,
     Calendar as CalendarIcon,
     MessageSquare,
     Activity,
-    Plus,
     UserPlus,
     Edit,
     Mail,
@@ -24,7 +22,8 @@ import {
     MoreVertical,
     Pill,
     Stethoscope,
-    Clock
+    Apple,
+    Brain
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -37,6 +36,8 @@ import { AddEventDialog } from '@/components/care-teams/AddEventDialog';
 import { LogMedicineDialog } from '@/components/care-teams/LogMedicineDialog';
 import { RecordVitalDialog } from '@/components/care-teams/RecordVitalDialog';
 import { SendMessageDialog } from '@/components/care-teams/SendMessageDialog';
+import { LogFoodDialog } from '@/components/care-teams/LogFoodDialog';
+import { LogMoodDialog } from '@/components/care-teams/LogMoodDialog';
 
 interface Profile {
     id: string;
@@ -96,6 +97,8 @@ const CareTeamDetails = () => {
     const [showLogMedicineDialog, setShowLogMedicineDialog] = useState(false);
     const [showRecordVitalDialog, setShowRecordVitalDialog] = useState(false);
     const [showSendMessageDialog, setShowSendMessageDialog] = useState(false);
+    const [showLogFoodDialog, setShowLogFoodDialog] = useState(false);
+    const [showLogMoodDialog, setShowLogMoodDialog] = useState(false);
     const [memberToRemove, setMemberToRemove] = useState<CareTeamMember | null>(null); const fetchCareTeamDetails = useCallback(async () => {
         try {
             // Get user's profile first
@@ -506,8 +509,8 @@ const CareTeamDetails = () => {
 
                     <TabsContent value="overview" className="space-y-6">
                         {/* Quick Stats */}
-                        <div className="grid gap-4 md:grid-cols-4">
-                            <Card>
+                        <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
+                            <Card className="hidden md:block">
                                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                     <CardTitle className="text-sm font-medium">Team Members</CardTitle>
                                     <Users className="h-4 w-4 text-muted-foreground" />
@@ -516,7 +519,7 @@ const CareTeamDetails = () => {
                                     <div className="text-2xl font-bold">{careTeam.care_team_members.length}</div>
                                 </CardContent>
                             </Card>
-                            <Card>
+                            <Card className="hidden md:block">
                                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                                     <CardTitle className="text-sm font-medium">Active Medications</CardTitle>
                                     <Activity className="h-4 w-4 text-muted-foreground" />
@@ -534,7 +537,7 @@ const CareTeamDetails = () => {
                                     <CalendarIcon className="h-4 w-4 text-muted-foreground" />
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="text-2xl font-bold">{upcomingEvents.length}</div>
+                                    <div className="text-2xl md:text-2xl font-bold">{upcomingEvents.length}</div>
                                     <p className="text-xs text-muted-foreground">
                                         Next 7 days
                                     </p>
@@ -546,7 +549,7 @@ const CareTeamDetails = () => {
                                     <MessageSquare className="h-4 w-4 text-muted-foreground" />
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="text-2xl font-bold">{recentMessages.length}</div>
+                                    <div className="text-2xl md:text-2xl font-bold">{recentMessages.length}</div>
                                     <p className="text-xs text-muted-foreground">
                                         {recentMessages.length === 0 ? 'No messages yet' : 'Recent activity'}
                                     </p>
@@ -597,7 +600,7 @@ const CareTeamDetails = () => {
                                     <CardDescription>Common tasks for care coordination</CardDescription>
                                 </CardHeader>
                                 <CardContent>
-                                    <div className="grid grid-cols-2 gap-3">
+                                    <div className="grid grid-cols-3 gap-3">
                                         <Button
                                             variant="outline"
                                             className="h-20 flex-col space-y-2"
@@ -632,6 +635,24 @@ const CareTeamDetails = () => {
                                         >
                                             <CalendarIcon className="h-6 w-6 text-[#ffa726]" />
                                             <span className="text-sm">Add Event</span>
+                                        </Button>
+
+                                        <Button
+                                            variant="outline"
+                                            className="h-20 flex-col space-y-2"
+                                            onClick={() => setShowLogFoodDialog(true)}
+                                        >
+                                            <Apple className="h-6 w-6 text-[#4caf50]" />
+                                            <span className="text-sm">Log Food</span>
+                                        </Button>
+
+                                        <Button
+                                            variant="outline"
+                                            className="h-20 flex-col space-y-2"
+                                            onClick={() => setShowLogMoodDialog(true)}
+                                        >
+                                            <Brain className="h-6 w-6 text-[#9c27b0]" />
+                                            <span className="text-sm">Log Mood</span>
                                         </Button>
                                     </div>
                                 </CardContent>
@@ -942,6 +963,40 @@ const CareTeamDetails = () => {
                     onMessageSent={() => {
                         setShowSendMessageDialog(false);
                         fetchRecentMessages(); // Refresh messages
+                    }}
+                />
+            )}
+
+            {/* Log Food Dialog */}
+            {careTeam && (
+                <LogFoodDialog
+                    open={showLogFoodDialog}
+                    onOpenChange={setShowLogFoodDialog}
+                    careTeamId={careTeam.id}
+                    onFoodLogged={() => {
+                        setShowLogFoodDialog(false);
+                        // Optionally refresh any relevant data
+                        toast({
+                            title: "Success",
+                            description: "Food logged successfully",
+                        });
+                    }}
+                />
+            )}
+
+            {/* Log Mood Dialog */}
+            {careTeam && (
+                <LogMoodDialog
+                    open={showLogMoodDialog}
+                    onOpenChange={setShowLogMoodDialog}
+                    careTeamId={careTeam.id}
+                    onMoodLogged={() => {
+                        setShowLogMoodDialog(false);
+                        // Optionally refresh any relevant data
+                        toast({
+                            title: "Success",
+                            description: "Mood logged successfully",
+                        });
                     }}
                 />
             )}
