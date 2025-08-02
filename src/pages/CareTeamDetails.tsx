@@ -21,7 +21,10 @@ import {
     Edit,
     Mail,
     Trash2,
-    MoreVertical
+    MoreVertical,
+    Pill,
+    Stethoscope,
+    Clock
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
@@ -30,6 +33,10 @@ import { EditTeamDialog } from '@/components/care-teams/EditTeamDialog';
 import { CareTeamCalendar } from '@/components/care-teams/CareTeamCalendar';
 import { Messages } from '@/components/care-teams/Messages';
 import { MedicalProviders } from '@/components/care-teams/MedicalProviders';
+import { AddEventDialog } from '@/components/care-teams/AddEventDialog';
+import { LogMedicineDialog } from '@/components/care-teams/LogMedicineDialog';
+import { RecordVitalDialog } from '@/components/care-teams/RecordVitalDialog';
+import { SendMessageDialog } from '@/components/care-teams/SendMessageDialog';
 
 interface Profile {
     id: string;
@@ -84,6 +91,10 @@ const CareTeamDetails = () => {
     const [activeTab, setActiveTab] = useState('overview');
     const [showInviteDialog, setShowInviteDialog] = useState(false);
     const [showEditDialog, setShowEditDialog] = useState(false);
+    const [showAddEventDialog, setShowAddEventDialog] = useState(false);
+    const [showLogMedicineDialog, setShowLogMedicineDialog] = useState(false);
+    const [showRecordVitalDialog, setShowRecordVitalDialog] = useState(false);
+    const [showSendMessageDialog, setShowSendMessageDialog] = useState(false);
     const [memberToRemove, setMemberToRemove] = useState<CareTeamMember | null>(null); const fetchCareTeamDetails = useCallback(async () => {
         try {
             // Get user's profile first
@@ -552,39 +563,89 @@ const CareTeamDetails = () => {
                             </Card>
                         </div>
 
-                        {/* Team Information */}
-                        <Card>
-                            <CardHeader>
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <CardTitle>Team Information</CardTitle>
-                                        <CardDescription>Basic details about this care team</CardDescription>
+                        {/* Team Information and Quick Actions */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            {/* Team Information */}
+                            <Card>
+                                <CardHeader>
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <CardTitle>Team Information</CardTitle>
+                                            <CardDescription>Basic details about this care team</CardDescription>
+                                        </div>
+                                        <Button variant="outline" size="sm" onClick={() => setShowEditDialog(true)}>
+                                            <Edit className="h-4 w-4 mr-2" />
+                                            Edit Team
+                                        </Button>
                                     </div>
-                                    <Button variant="outline" size="sm" onClick={() => setShowEditDialog(true)}>
-                                        <Edit className="h-4 w-4 mr-2" />
-                                        Edit Team
-                                    </Button>
-                                </div>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div>
-                                    <label className="text-sm font-medium text-muted-foreground">Team Name</label>
-                                    <p className="text-sm">{careTeam.name}</p>
-                                </div>
-                                <div>
-                                    <label className="text-sm font-medium text-muted-foreground">Care Recipient</label>
-                                    <p className="text-sm">{careTeam.care_recipient_name}</p>
-                                </div>
-                                <div>
-                                    <label className="text-sm font-medium text-muted-foreground">Description</label>
-                                    <p className="text-sm">{careTeam.description || 'No description provided'}</p>
-                                </div>
-                                <div>
-                                    <label className="text-sm font-medium text-muted-foreground">Created</label>
-                                    <p className="text-sm">{formatDate(careTeam.created_at)}</p>
-                                </div>
-                            </CardContent>
-                        </Card>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    <div>
+                                        <label className="text-sm font-medium text-muted-foreground">Team Name</label>
+                                        <p className="text-sm">{careTeam.name}</p>
+                                    </div>
+                                    <div>
+                                        <label className="text-sm font-medium text-muted-foreground">Care Recipient</label>
+                                        <p className="text-sm">{careTeam.care_recipient_name}</p>
+                                    </div>
+                                    <div>
+                                        <label className="text-sm font-medium text-muted-foreground">Description</label>
+                                        <p className="text-sm">{careTeam.description || 'No description provided'}</p>
+                                    </div>
+                                    <div>
+                                        <label className="text-sm font-medium text-muted-foreground">Created</label>
+                                        <p className="text-sm">{formatDate(careTeam.created_at)}</p>
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            {/* Quick Actions */}
+                            <Card>
+                                <CardHeader>
+                                    <CardTitle>Quick Actions</CardTitle>
+                                    <CardDescription>Common tasks for care coordination</CardDescription>
+                                </CardHeader>
+                                <CardContent>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <Button
+                                            variant="outline"
+                                            className="h-20 flex-col space-y-2"
+                                            onClick={() => setShowLogMedicineDialog(true)}
+                                        >
+                                            <Pill className="h-6 w-6 text-[#03bd9e]" />
+                                            <span className="text-sm">Log Medicine</span>
+                                        </Button>
+                                        
+                                        <Button
+                                            variant="outline"
+                                            className="h-20 flex-col space-y-2"
+                                            onClick={() => setShowRecordVitalDialog(true)}
+                                        >
+                                            <Stethoscope className="h-6 w-6 text-[#ff6b6b]" />
+                                            <span className="text-sm">Record Vital</span>
+                                        </Button>
+                                        
+                                        <Button
+                                            variant="outline"
+                                            className="h-20 flex-col space-y-2"
+                                            onClick={() => setShowSendMessageDialog(true)}
+                                        >
+                                            <MessageSquare className="h-6 w-6 text-[#00a9ff]" />
+                                            <span className="text-sm">Send Message</span>
+                                        </Button>
+                                        
+                                        <Button
+                                            variant="outline"
+                                            className="h-20 flex-col space-y-2"
+                                            onClick={() => setShowAddEventDialog(true)}
+                                        >
+                                            <CalendarIcon className="h-6 w-6 text-[#ffa726]" />
+                                            <span className="text-sm">Add Event</span>
+                                        </Button>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        </div>
 
                         {/* Medical Providers */}
                         <MedicalProviders careTeamId={careTeam.id} />
@@ -835,6 +896,62 @@ const CareTeamDetails = () => {
                     onOpenChange={setShowEditDialog}
                     careTeam={careTeam}
                     onTeamUpdated={handleTeamUpdated}
+                />
+            )}
+
+            {/* Add Event Dialog */}
+            {careTeam && (
+                <AddEventDialog
+                    open={showAddEventDialog}
+                    onOpenChange={setShowAddEventDialog}
+                    careTeamId={careTeam.id}
+                    onEventAdded={() => {
+                        setShowAddEventDialog(false);
+                        fetchUpcomingEvents(); // Refresh events
+                        toast({
+                            title: "Event Added",
+                            description: "The event has been added to your calendar.",
+                        });
+                    }}
+                />
+            )}
+
+            {/* Log Medicine Dialog */}
+            {careTeam && (
+                <LogMedicineDialog
+                    open={showLogMedicineDialog}
+                    onOpenChange={setShowLogMedicineDialog}
+                    careTeamId={careTeam.id}
+                    onMedicationLogged={() => {
+                        setShowLogMedicineDialog(false);
+                        fetchMedicationLogs(); // Refresh medication logs
+                    }}
+                />
+            )}
+
+            {/* Record Vital Dialog */}
+            {careTeam && (
+                <RecordVitalDialog
+                    open={showRecordVitalDialog}
+                    onOpenChange={setShowRecordVitalDialog}
+                    careTeamId={careTeam.id}
+                    onVitalRecorded={() => {
+                        setShowRecordVitalDialog(false);
+                        fetchRecentVitals(); // Refresh vitals
+                    }}
+                />
+            )}
+
+            {/* Send Message Dialog */}
+            {careTeam && (
+                <SendMessageDialog
+                    open={showSendMessageDialog}
+                    onOpenChange={setShowSendMessageDialog}
+                    careTeamId={careTeam.id}
+                    onMessageSent={() => {
+                        setShowSendMessageDialog(false);
+                        fetchRecentMessages(); // Refresh messages
+                    }}
                 />
             )}
 
