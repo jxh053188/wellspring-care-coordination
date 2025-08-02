@@ -109,7 +109,7 @@ export function AddEventDialog({
             const startDate = new Date(formData.startDate);
             const endDate = new Date(formData.endDate);
 
-            if (endDate <= startDate) {
+            if (endDate < startDate) {
                 throw new Error('End date must be after start date');
             }
 

@@ -29,6 +29,7 @@ import { InviteMemberDialog } from '@/components/care-teams/InviteMemberDialog';
 import { EditTeamDialog } from '@/components/care-teams/EditTeamDialog';
 import { CareTeamCalendar } from '@/components/care-teams/CareTeamCalendar';
 import { Messages } from '@/components/care-teams/Messages';
+import { MedicalProviders } from '@/components/care-teams/MedicalProviders';
 
 interface Profile {
     id: string;
@@ -584,6 +585,9 @@ const CareTeamDetails = () => {
                                 </div>
                             </CardContent>
                         </Card>
+
+                        {/* Medical Providers */}
+                        <MedicalProviders careTeamId={careTeam.id} />
                     </TabsContent>
 
                     <TabsContent value="members" className="space-y-6">
